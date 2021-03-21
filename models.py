@@ -22,7 +22,7 @@ class Ticket(Model):
     """Ticket table"""
 
     id = fields.UUIDField(pk=True)
-    user_id = fields.IntField()
+    user_id = fields.IntField()  # https://discordpy.readthedocs.io/en/latest/api.html#discord.User.id
     ticket_number = fields.IntField()
     lottery_id = fields.ForeignKeyField("models.Lottery", related_name="tickets")
 
