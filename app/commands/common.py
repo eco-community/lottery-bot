@@ -15,9 +15,11 @@ async def help(ctx):
     # default help
     widget.add_field(name="$lottery.view_lottery", value="`Display lottery information`", inline=False)
     widget.add_field(name="$lottery.lotteries", value="`Display all lotteries`", inline=False)
-    widget.add_field(name="$lottery.view_tickets", value="`View tickets`", inline=False)
+    widget.add_field(name="$lottery.my_tickets", value="`My tickets`", inline=False)
     widget.add_field(name="$lottery.buy_ticket", value="`Buy ticket`", inline=False)
     widget.add_field(name="$lottery.my_wallet", value="`View my balance`", inline=False)
+    widget.add_field(name="$lottery.withdraw", value="`Withdraw eco :points: to my balance`", inline=False)
+    widget.add_field(name="$lottery.deposit", value="`Deposit eco :points: to my balance`", inline=False)
     await ctx.send(embed=widget)
 
 

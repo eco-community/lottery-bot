@@ -24,7 +24,7 @@ async def new_lottery(ctx, name: str, strike_eth_block: int, ticket_price: int =
 async def new_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
         await ctx.send(
-            "Wrong syntax, ```$lottery.new_lottery 'LOTTERY NAME' STRIKE_ETH_BLOCK TICKET_PRICE(OPTIONAL)```"
+            "Wrong syntax, ```$lottery.new_lottery \"LOTTERY NAME\" STRIKE_ETH_BLOCK TICKET_PRICE(OPTIONAL)```"
         )  # noqa: E501
 
 
@@ -43,7 +43,7 @@ async def view_lottery(ctx, name: str):
 @view_lottery.error
 async def view_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send("Wrong syntax, ```$lottery.view_lottery 'LOTTERY NAME'```")
+        await ctx.send("Wrong syntax, ```$lottery.view_lottery \"LOTTERY NAME\"```")
 
 
 @commands.command()
@@ -54,7 +54,7 @@ async def lotteries(ctx):
     widget = Embed(description="List of all lotteries", color=0x03D692, title="All lotteries")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     for lottery in lotteries_list:
-        widget.add_field(name=lottery.name, value=f"Ticket price {int(lottery.ticket_price)} :points", inline=False)
+        widget.add_field(name=lottery.name, value=f"Ticket price {int(lottery.ticket_price)} :points:", inline=False)
     await ctx.send(embed=widget)
 
 

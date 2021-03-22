@@ -1,6 +1,8 @@
 import sentry_sdk
 from discord.ext import commands
 
+from app.models import User
+
 
 def use_sentry(client, **sentry_args):
     """
@@ -25,3 +27,10 @@ def use_sentry(client, **sentry_args):
             (commands.MissingRole, commands.MissingAnyRole, commands.BadArgument, commands.MissingRequiredArgument),
         ):
             raise error
+
+
+async def ensure_registered(user_id: int) -> User:
+    """Ensure that user is registered in our database"""
+
+    user, _ = await User.get_or_create(id=user_id)
+    return user
