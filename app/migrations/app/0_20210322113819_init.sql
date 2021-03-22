@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS "ticket" (
     "ticket_number" INT NOT NULL,
     "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "modified_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
-    "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
     "lottery_id" UUID NOT NULL REFERENCES "lottery" ("id") ON DELETE CASCADE,
+    "user_id" BIGINT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
     CONSTRAINT "uid_ticket_ticket__29ed4d" UNIQUE ("ticket_number", "lottery_id")
 );
 COMMENT ON TABLE "ticket" IS 'Many to many relationship between user and lottery';

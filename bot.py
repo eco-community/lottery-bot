@@ -34,5 +34,4 @@ if __name__ == "__main__":
     bot.load_extension("app.commands.wallet")
     bot.load_extension("app.commands.common")
     bot.loop.run_until_complete(Tortoise.init(config=TORTOISE_ORM))
-    bot.loop.run_until_complete(Tortoise.generate_schemas())
     bot.run(config.TOKEN)
