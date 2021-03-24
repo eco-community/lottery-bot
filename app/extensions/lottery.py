@@ -3,21 +3,30 @@ from discord.ext import commands
 from tortoise import exceptions
 
 from app.models import Lottery
+from app.utils import get_eta_to_block
 from constants import ROLES_CAN_CONTROL_BOT
 
 
 @commands.has_any_role(*ROLES_CAN_CONTROL_BOT)
 @commands.command()
 async def new_lottery(ctx, name: str, strike_eth_block: int, ticket_price: int = None):
+    # parse args
     if ticket_price:
         lottery = Lottery(name=name, strike_eth_block=strike_eth_block, ticket_price=ticket_price)
     else:
         lottery = Lottery(name=name, strike_eth_block=strike_eth_block)
+    # get eta to block
+    try:
+        lottery.strike_date_eta = await get_eta_to_block(strike_eth_block)
+    except TypeError:
+        # block has already passed
+        return await ctx.send(f"Error, block `{strike_eth_block}` already passed, choose a different block")
+    # save lottery
     try:
         await lottery.save()
     except exceptions.IntegrityError:
         return await ctx.send(f"Error, lottery `{name}` already exists, choose a different name")
-    await ctx.send(f"Success! Created lottery: `{lottery}`")
+    await ctx.send(f"Success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC")
 
 
 @new_lottery.error
@@ -36,7 +45,8 @@ async def view_lottery(ctx, name: str):
     widget = Embed(description=f"{lottery.name} information", color=0x03D692, title=f"{lottery.name}")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     widget.add_field(name="Ticket price:", value=f"{int(lottery.ticket_price)}", inline=False)
-    widget.add_field(name="Strike ETH block:", value=f"{lottery.strike_eth_block}", inline=False)
+    widget.add_field(name="Strike ETH block:", value=f"[{lottery.strike_eth_block}](<https://etherscan.io/block/{lottery.strike_eth_block}>)", inline=False)  # noqa: E501
+    widget.add_field(name="Strike Date (estimated):", value=f"[{lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC](<https://etherscan.io/block/countdown/{lottery.strike_eth_block}>)", inline=False)  # noqa: E501
     await ctx.send(embed=widget)
 
 

@@ -28,7 +28,7 @@ class Lottery(Model):
     id = fields.UUIDField(pk=True)
     name = fields.CharField(max_length=255, unique=True)
     ticket_price = fields.data.DecimalField(max_digits=15, decimal_places=2, default=10)
-    strike_date_eta = fields.data.DatetimeField(null=True)
+    strike_date_eta = fields.data.DatetimeField()
     strike_eth_block = fields.IntField()
     winners = fields.JSONField(null=True)
     status = fields.CharEnumField(

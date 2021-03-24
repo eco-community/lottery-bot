@@ -1,7 +1,11 @@
+from datetime import datetime, timedelta, timezone
+
+import aiohttp
 import sentry_sdk
 from discord.ext import commands
 
 from app.models import User
+import config
 
 
 def use_sentry(client, **sentry_args):
@@ -34,3 +38,19 @@ async def ensure_registered(user_id: int) -> User:
 
     user, _ = await User.get_or_create(id=user_id)
     return user
+
+
+async def get_eta_to_block(block: int) -> datetime:
+    """Get ETA to block
+
+    Raises: KeyError if block already passed
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            f"https://api.etherscan.io/api?module=block&action=getblockcountdown&blockno={block}&apikey={config.ETHERSCAN_API_KEY}"  # noqa: E501
+        ) as response:
+
+            response_json = await response.json()
+            eta_in_seconds = int(float(response_json["result"]["EstimateTimeInSec"]))
+            strike_date_eta = datetime.now(tz=timezone.utc) + timedelta(seconds=eta_in_seconds)
+            return strike_date_eta
