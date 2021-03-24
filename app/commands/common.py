@@ -1,4 +1,4 @@
-from discord import Embed
+from discord import Embed, Activity, ActivityType
 from discord.ext import commands
 
 from constants import ROLES_CAN_CONTROL_BOT
@@ -23,5 +23,15 @@ async def help(ctx):
     await ctx.send(embed=widget)
 
 
+class CommonCog(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.bot.change_presence(activity=Activity(type=ActivityType.watching, name="ECO lottery"))
+
+
 def setup(bot):
     bot.add_command(help)
+    bot.add_cog(CommonCog(bot))

@@ -1,12 +1,17 @@
 from tortoise import fields
 from tortoise.models import Model
 
+from app.constants import LotteryStatus
+from app.validators import PositiveValueValidator
+
 
 class User(Model):
     """User table"""
 
     id = fields.BigIntField(pk=True)  # same as https://discordpy.readthedocs.io/en/latest/api.html#discord.User.id
-    balance = fields.data.DecimalField(max_digits=15, decimal_places=2, default=0)
+    balance = fields.data.DecimalField(
+        max_digits=15, decimal_places=2, default=0, validators=[PositiveValueValidator()]
+    )
     created_at = fields.DatetimeField(auto_now_add=True)
     modified_at = fields.DatetimeField(auto_now=True)
 
@@ -26,8 +31,10 @@ class Lottery(Model):
     strike_date_eta = fields.data.DatetimeField(null=True)
     strike_eth_block = fields.IntField()
     winners = fields.JSONField(null=True)
-    is_finished = fields.BooleanField(default=False)
-    has_winners_been_paid = fields.BooleanField(default=False)
+    status = fields.CharEnumField(
+        enum_type=LotteryStatus,
+        default=LotteryStatus.STARTED,
+    )
     participants = fields.ManyToManyField("app.User", related_name="lotteries", through="ticket")
     created_at = fields.DatetimeField(auto_now_add=True)
     modified_at = fields.DatetimeField(auto_now=True)

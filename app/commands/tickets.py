@@ -8,7 +8,7 @@ from tortoise.expressions import F
 from tortoise.transactions import in_transaction
 
 from constants import LOTTERY_TICKET_MIN_NUMBER, LOTTERY_TICKET_MAX_NUMBER
-from app.models import Lottery, Ticket
+from app.models import Lottery, Ticket, User
 from app.utils import ensure_registered
 
 
@@ -17,18 +17,19 @@ cryptogen = SystemRandom()
 
 @commands.command()
 async def buy_ticket(ctx, lottery_name: str):
-    user = await ensure_registered(ctx.author.id)
-    # validation
-    lottery = await Lottery.get_or_none(name=lottery_name)
-    if not lottery:
-        return await ctx.send(f"Error, lottery `{lottery_name}` doesn't exist")
-    if user.balance < lottery.ticket_price:
-        return await ctx.send(
-            f"Not enough points, You only have `{int(user.balance)}` :points: on your deposit and ticket price is `{int(lottery.ticket_price)}` :points:"  # noqa: E501
-        )
+    await ensure_registered(ctx.author.id)
     # ticket buying logic
     try:
-        async with in_transaction():  # to guarantee atomicity
+        async with in_transaction():  # prevent race conditions via select_for_update + in_transaction
+            user = await User.all().select_for_update().get(id=ctx.author.id)  # select user 2nd time to lock it's row
+            # validation
+            lottery = await Lottery.get_or_none(name=lottery_name)
+            if not lottery:
+                return await ctx.send(f"Error, lottery `{lottery_name}` doesn't exist")
+            if user.balance < lottery.ticket_price:
+                return await ctx.send(
+                    f"Not enough points, You only have `{int(user.balance)}`:points: on your deposit and ticket price is `{int(lottery.ticket_price)}`:points:"  # noqa: E501
+                )
             user.balance = F("balance") - lottery.ticket_price  # to prevent race conditions
             await user.save(update_fields=["balance", "modified_at"])
             # create ticket for user
@@ -39,10 +40,11 @@ async def buy_ticket(ctx, lottery_name: str):
             )
             await user.refresh_from_db(fields=["balance"])
             await ctx.send(
-                f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{int(user.balance)}` :points:"  # noqa: E501
+                f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{int(user.balance)}`:points:"  # noqa: E501
             )
     except exceptions.IntegrityError:
         # could be caused by duplicate tickets because we have a higher probability of collisions
+        # it's safe to have a collision in tickets because balance will be rolled back in transaction
         await ctx.send(f"Error, {ctx.author.mention}, please try again")
 
 
