@@ -29,9 +29,9 @@ logging.basicConfig(filename="eco-lottery.log", level=logging.INFO, format="%(as
 
 
 if __name__ == "__main__":
-    bot.load_extension("app.commands.lottery")
-    bot.load_extension("app.commands.tickets")
-    bot.load_extension("app.commands.wallet")
-    bot.load_extension("app.commands.common")
+    bot.load_extension("app.extensions.lottery")
+    bot.load_extension("app.extensions.tickets")
+    bot.load_extension("app.extensions.wallet")
+    bot.load_extension("app.extensions.common")
     bot.loop.run_until_complete(Tortoise.init(config=TORTOISE_ORM))
     bot.run(config.TOKEN)
