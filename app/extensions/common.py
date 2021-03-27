@@ -29,7 +29,7 @@ class CommonCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.bot.change_presence(activity=Activity(type=ActivityType.watching, name="ECO lottery"))
+        await self.bot.change_presence(activity=Activity(type=ActivityType.playing, name="ECO lottery"))
 
 
 def setup(bot):

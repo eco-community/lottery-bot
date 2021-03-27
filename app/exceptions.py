@@ -1,0 +1,2 @@
+class BlockAlreadyMinedException(Exception):
+    pass

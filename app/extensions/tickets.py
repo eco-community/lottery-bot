@@ -7,9 +7,9 @@ from tortoise.query_utils import Q
 from tortoise.expressions import F
 from tortoise.transactions import in_transaction
 
-from constants import LOTTERY_TICKET_MIN_NUMBER, LOTTERY_TICKET_MAX_NUMBER
 from app.models import Lottery, Ticket, User
 from app.utils import ensure_registered
+from app.constants import LotteryStatus
 
 
 cryptogen = SystemRandom()
@@ -26,6 +26,8 @@ async def buy_ticket(ctx, lottery_name: str):
             lottery = await Lottery.get_or_none(name=lottery_name)
             if not lottery:
                 return await ctx.send(f"Error, lottery `{lottery_name}` doesn't exist")
+            if lottery.status != LotteryStatus.STARTED:
+                return await ctx.send(f"Tickets for `{lottery_name}` can't be bought")
             if user.balance < lottery.ticket_price:
                 return await ctx.send(
                     f"Not enough points, You only have `{int(user.balance)}`:points: on your deposit and ticket price is `{int(lottery.ticket_price)}`:points:"  # noqa: E501
@@ -36,7 +38,7 @@ async def buy_ticket(ctx, lottery_name: str):
             ticket = await Ticket.create(
                 user=user,
                 lottery=lottery,
-                ticket_number=cryptogen.randint(LOTTERY_TICKET_MIN_NUMBER, LOTTERY_TICKET_MAX_NUMBER),
+                ticket_number=cryptogen.randint(lottery.ticket_min_number, lottery.ticket_max_number),
             )
             await user.refresh_from_db(fields=["balance"])
             await ctx.send(

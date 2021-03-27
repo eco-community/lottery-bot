@@ -3,14 +3,17 @@ CREATE TABLE IF NOT EXISTS "lottery" (
     "id" UUID NOT NULL  PRIMARY KEY,
     "name" VARCHAR(255) NOT NULL UNIQUE,
     "ticket_price" DECIMAL(15,2) NOT NULL  DEFAULT 10,
-    "strike_date_eta" TIMESTAMPTZ,
+    "strike_date_eta" TIMESTAMPTZ NOT NULL,
     "strike_eth_block" INT NOT NULL,
-    "winners" JSONB,
-    "is_finished" BOOL NOT NULL  DEFAULT False,
-    "has_winners_been_paid" BOOL NOT NULL  DEFAULT False,
+    "winning_tickets" JSONB,
+    "has_winners" BOOL NOT NULL  DEFAULT False,
+    "status" VARCHAR(10) NOT NULL  DEFAULT 'started',
+    "ticket_min_number" INT NOT NULL  DEFAULT 10000,
+    "ticket_max_number" INT NOT NULL  DEFAULT 99000,
     "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "modified_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP
 );
+COMMENT ON COLUMN "lottery"."status" IS 'STARTED: started\nSTOP_SALES: stop_sales\nSTRIKED: striked\nENDED: ended';
 COMMENT ON TABLE "lottery" IS 'Lottery table';
 CREATE TABLE IF NOT EXISTS "user" (
     "id" BIGSERIAL NOT NULL PRIMARY KEY,

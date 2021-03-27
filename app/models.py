@@ -30,14 +30,21 @@ class Lottery(Model):
     ticket_price = fields.data.DecimalField(max_digits=15, decimal_places=2, default=10)
     strike_date_eta = fields.data.DatetimeField()
     strike_eth_block = fields.IntField()
-    winners = fields.JSONField(null=True)
+    winning_tickets = fields.JSONField(null=True)
+    # there is a possibility when lottery doesn't have winners, in this case we will add lottery pool to the total pool
+    # then if someone wins another lottery he will get total pool
+    has_winners = fields.BooleanField(default=False)
     status = fields.CharEnumField(
         enum_type=LotteryStatus,
         default=LotteryStatus.STARTED,
     )
+    ticket_min_number = fields.IntField(default=10_000)
+    ticket_max_number = fields.IntField(default=99_000)
     participants = fields.ManyToManyField("app.User", related_name="lotteries", through="ticket")
     created_at = fields.DatetimeField(auto_now_add=True)
     modified_at = fields.DatetimeField(auto_now=True)
+
+    tickets: fields.ReverseRelation["Ticket"]
 
     def __str__(self):
         return self.name

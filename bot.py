@@ -25,7 +25,11 @@ use_sentry(
 )
 
 # setup logger
-logging.basicConfig(filename="eco-lottery.log", level=logging.INFO, format="%(asctime)s %(levelname)s:%(message)s")
+logging.basicConfig(
+    filename="eco-lottery.log",
+    level=logging.getLevelName(config.LOG_LEVEL),
+    format="%(asctime)s %(levelname)s:%(message)s",
+)
 
 
 if __name__ == "__main__":
