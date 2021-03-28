@@ -8,7 +8,7 @@ from tortoise.expressions import F
 from tortoise.transactions import in_transaction
 
 from app.models import Lottery, Ticket, User
-from app.utils import ensure_registered
+from app.utils import ensure_registered, pp_points
 from app.constants import LotteryStatus
 
 
@@ -22,15 +22,23 @@ async def buy_ticket(ctx, lottery_name: str):
     try:
         async with in_transaction():  # prevent race conditions via select_for_update + in_transaction
             user = await User.all().select_for_update().get(id=ctx.author.id)  # select user 2nd time to lock it's row
-            # validation
+            # validate that lottery exists
             lottery = await Lottery.get_or_none(name=lottery_name)
             if not lottery:
                 return await ctx.send(f"Error, lottery `{lottery_name}` doesn't exist")
-            if lottery.status != LotteryStatus.STARTED:
-                return await ctx.send(f"Tickets for `{lottery_name}` can't be bought")
+            # validate that we allow selling tickets
+            if lottery.status == LotteryStatus.STOP_SALES:
+                return await ctx.send(f"Tickets can't be bought for `{lottery_name}` because it's close to strike date")
+            elif lottery.status == LotteryStatus.STRIKED:
+                return await ctx.send(
+                    f"Tickets can't be bought for `{lottery_name}` because winning tickets were already selected"
+                )
+            elif lottery.status == LotteryStatus.ENDED:
+                return await ctx.send(f"Tickets can't be bought for `{lottery_name}` because it has ended")
+            # validate user balance
             if user.balance < lottery.ticket_price:
                 return await ctx.send(
-                    f"Not enough points, You only have `{int(user.balance)}`:points: on your deposit and ticket price is `{int(lottery.ticket_price)}`:points:"  # noqa: E501
+                    f"Not enough points, You only have `{pp_points(user.balance)}`:points: on your deposit and ticket price is `{int(lottery.ticket_price)}`:points:"  # noqa: E501
                 )
             user.balance = F("balance") - lottery.ticket_price  # to prevent race conditions
             await user.save(update_fields=["balance", "modified_at"])
@@ -38,11 +46,11 @@ async def buy_ticket(ctx, lottery_name: str):
             ticket = await Ticket.create(
                 user=user,
                 lottery=lottery,
-                ticket_number=cryptogen.randint(lottery.ticket_min_number, lottery.ticket_max_number),
+                ticket_number=cryptogen.randint(lottery.ticket_min_number, lottery.ticket_max_number - 1),
             )
             await user.refresh_from_db(fields=["balance"])
             await ctx.send(
-                f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{int(user.balance)}`:points:"  # noqa: E501
+                f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`:points:"  # noqa: E501
             )
     except exceptions.IntegrityError:
         # could be caused by duplicate tickets because we have a higher probability of collisions

@@ -13,7 +13,7 @@ import config
 from constants import ROLES_CAN_CONTROL_BOT
 from app.models import Lottery, User
 from app.exceptions import BlockAlreadyMinedException
-from app.utils import get_eta_to_block, select_winning_tickets, get_hash_for_block
+from app.utils import get_eta_to_block, select_winning_tickets, get_hash_for_block, pp_points
 from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS
 
 
@@ -92,7 +92,9 @@ async def lotteries(ctx):
     widget = Embed(description="List of all lotteries", color=0x03D692, title="All lotteries")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     for lottery in lotteries_list:
-        widget.add_field(name=lottery.name, value=f"Ticket price {int(lottery.ticket_price)} :points:", inline=False)
+        widget.add_field(
+            name=lottery.name, value=f"Ticket price {pp_points(lottery.ticket_price)}:points:", inline=False
+        )
     await ctx.send(embed=widget)
 
 
@@ -158,9 +160,12 @@ class LotteryCog(commands.Cog):
                 if ticket.ticket_number in lottery.winning_tickets:
                     winners_ids.add(ticket.user_id)
                     logging.debug(f":::lottery_cron: Winner for lottery: {lottery.name} is: {ticket.user_id}")
+            # process winners
             if winners_ids:
                 bulk_save_has_winners.append(lottery.id)
+                # get winning pool for the current lottery
                 lottery_pool = len(lottery.tickets) * lottery.ticket_price
+                # get winning pool for past lotteries without winners (aka with 'ended' status and has_winners="False")
                 qs = (
                     await Lottery.filter(Q(status=LotteryStatus.ENDED) & Q(has_winners=False))
                     .prefetch_related("tickets")
@@ -170,20 +175,24 @@ class LotteryCog(commands.Cog):
                 # https://github.com/tortoise/tortoise-orm/issues/683
                 old_winning_pool = sum([_.total_tickets * _.ticket_price for _ in qs])
                 total_winning_pool = old_winning_pool + lottery_pool
-                winner_share = total_winning_pool / len(winners_ids)
                 # share winning pool equally between winners
+                winner_share = total_winning_pool / len(winners_ids)
                 await User.filter(id__in=winners_ids).update(balance=F("balance") + winner_share)
+                # remove old winning pool (because it was paid to the winners)
+                if old_winning_pool:
+                    await Lottery.filter(Q(status=LotteryStatus.ENDED) & Q(has_winners=False)).update(has_winners=True)
+                winners_mentions = [f"<@{_}>" for _ in winners_ids]
+                winners_mentions_str = ", ".join(winners_mentions)
             else:
                 bulk_save_no_winners.append(lottery.id)
             # send notification to the channel
             await notification_channel.send(
-                f"`{lottery.name}` striked, winning tickets: `{', '.join(map(str, lottery.winning_tickets))}`"
+                f"`{lottery.name}` striked, winning tickets: `{', '.join(map(str, lottery.winning_tickets))}`, winners: {winners_mentions_str if winners_ids else 'none'}"  # noqa: E501
             )
+        # bulk change lotteries to LotteryStatus.ENDED
         if bulk_save_has_winners:
-            # bulk change lotteries to LotteryStatus.ENDED
             await Lottery.filter(id__in=bulk_save_has_winners).update(status=LotteryStatus.ENDED, has_winners=True)
         if bulk_save_no_winners:
-            # bulk change lotteries to LotteryStatus.ENDED
             await Lottery.filter(id__in=bulk_save_no_winners).update(status=LotteryStatus.ENDED)
         return None
 

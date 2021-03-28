@@ -7,13 +7,13 @@ from tortoise.transactions import in_transaction
 
 import config
 from app.models import User
-from app.utils import ensure_registered
+from app.utils import ensure_registered, pp_points
 
 
 @commands.command()
 async def my_wallet(ctx):
     user = await ensure_registered(ctx.author.id)
-    await ctx.send(f"{ctx.author.mention}, your balance is: {user.balance:.2f}:points:")
+    await ctx.send(f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}:points:")
 
 
 @commands.command()
@@ -28,7 +28,7 @@ async def withdraw(ctx):
             await ctx.send(f"!send {ctx.author.mention} {int(old_balance)}")
         else:
             await ctx.send(
-                f"{ctx.author.mention} minimum withdrawal amount is 1:points: (you have {user.balance:.2f}:points:)"  # noqa: E501
+                f"{ctx.author.mention} minimum withdrawal amount is 1:points: (you have {pp_points(user.balance)}:points:)"  # noqa: E501
             )
 
 
@@ -56,7 +56,9 @@ class WalletCog(commands.Cog):
             points = Decimal(regex.findall(message.system_content)[0])
             mentioned_user = [_ for _ in message.mentions if _.id != self.bot.user.id][0]
             await User.filter(id=mentioned_user.id).update(balance=F("balance") + points)  # prevent race conditions
-            await message.channel.send(f"{mentioned_user.mention}, your balance was credited for {points}:points:")
+            await message.channel.send(
+                f"{mentioned_user.mention}, your balance was credited for {pp_points(points)}:points:"
+            )
 
 
 def setup(bot):

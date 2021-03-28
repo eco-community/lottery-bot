@@ -1,5 +1,6 @@
 import random
 from typing import List
+from decimal import Decimal
 from datetime import datetime, timedelta, timezone
 
 import aiohttp
@@ -34,6 +35,17 @@ def use_sentry(client, **sentry_args):
             (commands.MissingRole, commands.MissingAnyRole, commands.BadArgument, commands.MissingRequiredArgument),
         ):
             raise error
+
+
+def pp_points(balance: Decimal) -> str:
+    """Pretty print points"""
+    str_balance = f"{balance:.1f}"
+    suffix = ".0"
+    # backport from Python 3.9 https://docs.python.org/3/library/stdtypes.html#str.removesuffix
+    if suffix and str_balance.endswith(suffix):
+        return str_balance[: -len(suffix)]
+    else:
+        return str_balance[:]
 
 
 async def ensure_registered(user_id: int) -> User:
@@ -95,4 +107,5 @@ async def select_winning_tickets(
     """
 
     vrf_random = random.Random(hash)
-    return vrf_random.sample(range(min_number, max_number), number_of_winning_tickets)
+    # make range to behave as inclusive range, this way ticket with max_number could be won
+    return vrf_random.sample(range(min_number, max_number + 1), number_of_winning_tickets)
