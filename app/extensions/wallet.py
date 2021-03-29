@@ -43,23 +43,26 @@ async def deposit(ctx):
 class WalletCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.points_regex = re.compile("<:points:819648258112225316>(\\d*\\.?\\d+)")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """Refill user's balance via listening for messages from The Accountant bot"""
 
-        # if message is from The Accountant bot and money were send to Lottery Bot
         if (
+            # if message is from The Accountant Bot
             message.author.id == config.ACCOUNTANT_BOT_ID
-            and self.bot.user.mentioned_in(message)
             and "I’ve recorded that you transferred" in message.content
+            # and there were two mentions in the message
+            and len(message.raw_mentions) == 2
+            # and lottery bot was marked as receiver
+            and self.bot.user.id == message.raw_mentions[1]
         ):
-            regex = re.compile("points:(\\d*\\.?\\d+)")
-            points = Decimal(regex.findall(message.system_content)[0])
-            mentioned_user = [_ for _ in message.mentions if _.id != self.bot.user.id][0]
-            await User.filter(id=mentioned_user.id).update(balance=F("balance") + points)  # prevent race conditions
+            points = Decimal(self.points_regex.findall(message.system_content)[0])
+            mentioned_user_id = message.raw_mentions[0]
+            await User.filter(id=mentioned_user_id).update(balance=F("balance") + points)  # prevent race conditions
             await message.channel.send(
-                f"{mentioned_user.mention}, your balance was credited for {pp_points(points)}<:points:819648258112225316>"
+                f"<@{mentioned_user_id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>"
             )
 
 
