@@ -13,7 +13,7 @@ from app.utils import ensure_registered, pp_points
 @commands.command()
 async def my_wallet(ctx):
     user = await ensure_registered(ctx.author.id)
-    await ctx.send(f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}:points:")
+    await ctx.send(f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}<:points:819648258112225316>")
 
 
 @commands.command()
@@ -28,14 +28,16 @@ async def withdraw(ctx):
             await ctx.send(f"!send {ctx.author.mention} {int(old_balance)}")
         else:
             await ctx.send(
-                f"{ctx.author.mention} minimum withdrawal amount is 1:points: (you have {pp_points(user.balance)}:points:)"  # noqa: E501
+                f"{ctx.author.mention} minimum withdrawal amount is 1<:points:819648258112225316> (you have {pp_points(user.balance)}<:points:819648258112225316>)"  # noqa: E501
             )
 
 
 @commands.command()
 async def deposit(ctx):
     await ensure_registered(ctx.author.id)
-    await ctx.send(f"To deposit 10:points: to your account send command\n `!send {ctx.bot.user.mention} 10`")
+    await ctx.send(
+        f"To deposit 10<:points:819648258112225316> to your account send command\n `!send {ctx.bot.user.mention} 10`"
+    )
 
 
 class WalletCog(commands.Cog):
@@ -57,7 +59,7 @@ class WalletCog(commands.Cog):
             mentioned_user = [_ for _ in message.mentions if _.id != self.bot.user.id][0]
             await User.filter(id=mentioned_user.id).update(balance=F("balance") + points)  # prevent race conditions
             await message.channel.send(
-                f"{mentioned_user.mention}, your balance was credited for {pp_points(points)}:points:"
+                f"{mentioned_user.mention}, your balance was credited for {pp_points(points)}<:points:819648258112225316>"
             )
 
 

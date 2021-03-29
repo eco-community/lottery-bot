@@ -38,7 +38,7 @@ async def buy_ticket(ctx, lottery_name: str):
             # validate user balance
             if user.balance < lottery.ticket_price:
                 return await ctx.send(
-                    f"Not enough points, You only have `{pp_points(user.balance)}`:points: on your deposit and ticket price is `{int(lottery.ticket_price)}`:points:"  # noqa: E501
+                    f"Not enough points, You only have `{pp_points(user.balance)}`<:points:819648258112225316> on your deposit and ticket price is `{int(lottery.ticket_price)}`<:points:819648258112225316>"  # noqa: E501
                 )
             user.balance = F("balance") - lottery.ticket_price  # to prevent race conditions
             await user.save(update_fields=["balance", "modified_at"])
@@ -50,7 +50,7 @@ async def buy_ticket(ctx, lottery_name: str):
             )
             await user.refresh_from_db(fields=["balance"])
             await ctx.send(
-                f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`:points:"  # noqa: E501
+                f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
             )
     except exceptions.IntegrityError:
         # could be caused by duplicate tickets because we have a higher probability of collisions

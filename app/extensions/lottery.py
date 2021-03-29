@@ -93,7 +93,9 @@ async def lotteries(ctx):
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     for lottery in lotteries_list:
         widget.add_field(
-            name=lottery.name, value=f"Ticket price {pp_points(lottery.ticket_price)}:points:", inline=False
+            name=lottery.name,
+            value=f"Ticket price {pp_points(lottery.ticket_price)}<:points:819648258112225316>",
+            inline=False,
         )
     await ctx.send(embed=widget)
 

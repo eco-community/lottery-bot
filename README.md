@@ -32,4 +32,4 @@ A bot that can create lotteries with verifiable randomness
 5. Copy and update settings in `config.example.py`
 6. Init database tables via `aerich upgrade`
 7. Start bot via `python bot.py` or [via supervisord](http://supervisord.org/) or [systemd](https://es.wikipedia.org/wiki/Systemd)
-8. Add a bot to the server with at least `2147567680` permissions
+8. Add a bot to the server with at least `2147829824` permissions

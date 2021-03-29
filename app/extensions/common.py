@@ -18,8 +18,12 @@ async def help(ctx):
     widget.add_field(name="$lottery.my_tickets", value="`My tickets`", inline=False)
     widget.add_field(name="$lottery.buy_ticket", value="`Buy ticket`", inline=False)
     widget.add_field(name="$lottery.my_wallet", value="`View my balance`", inline=False)
-    widget.add_field(name="$lottery.withdraw", value="`Withdraw eco :points: to my balance`", inline=False)
-    widget.add_field(name="$lottery.deposit", value="`Deposit eco :points: to my balance`", inline=False)
+    widget.add_field(
+        name="$lottery.withdraw", value="`Withdraw eco <:points:819648258112225316> to my balance`", inline=False
+    )
+    widget.add_field(
+        name="$lottery.deposit", value="`Deposit eco <:points:819648258112225316> to my balance`", inline=False
+    )
     await ctx.send(embed=widget)
 
 
