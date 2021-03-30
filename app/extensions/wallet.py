@@ -58,8 +58,9 @@ class WalletCog(commands.Cog):
             # and lottery bot was marked as receiver
             and self.bot.user.id == message.raw_mentions[1]
         ):
-            points = Decimal(self.points_regex.findall(message.system_content)[0])
             mentioned_user_id = message.raw_mentions[0]
+            await ensure_registered(mentioned_user_id)
+            points = Decimal(self.points_regex.findall(message.system_content)[0])
             await User.filter(id=mentioned_user_id).update(balance=F("balance") + points)  # prevent race conditions
             await message.channel.send(
                 f"<@{mentioned_user_id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>"
