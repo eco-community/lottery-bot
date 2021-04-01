@@ -13,7 +13,7 @@ async def help(ctx):
     if any([role for role in user_roles if role in ROLES_CAN_CONTROL_BOT]):
         widget.add_field(name="$lottery.new_lottery", value="`Create a new lottery`", inline=False)
     # default help
-    widget.add_field(name="$lottery.lotteries", value="`Display all lotteries`", inline=False)
+    widget.add_field(name="$lottery.lotteries", value="`Display active lotteries`", inline=False)
     widget.add_field(name="$lottery.view_lottery", value="`Display lottery information`", inline=False)
     widget.add_field(name="$lottery.my_tickets", value="`My tickets`", inline=False)
     widget.add_field(name="$lottery.buy_ticket", value="`Buy ticket`", inline=False)

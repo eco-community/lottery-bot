@@ -70,6 +70,9 @@ async def view_lottery(ctx, name: str):
         value=f"[{lottery.strike_eth_block}](<https://etherscan.io/block/{lottery.strike_eth_block}>)",
         inline=False,
     )  # noqa: E501
+    widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
+    widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
+    widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
     widget.add_field(
         name="Strike Date (estimated):",
         value=f"[{lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC](<https://etherscan.io/block/countdown/{lottery.strike_eth_block}>)",  # noqa: E501
@@ -86,9 +89,9 @@ async def view_lottery_error(ctx, error):
 
 @commands.command()
 async def lotteries(ctx):
-    lotteries_list = await Lottery.all()
+    lotteries_list = await Lottery.exclude(status=LotteryStatus.ENDED)
     if not lotteries_list:
-        return await ctx.send("We don't have any lotteries, create one via `$lottery.new_lottery`")
+        return await ctx.send("We don't have any active lotteries")
     widget = Embed(description="List of all lotteries", color=0x03D692, title="All lotteries")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     for lottery in lotteries_list:
