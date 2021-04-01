@@ -53,7 +53,7 @@ async def new_lottery(
 async def new_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
         await ctx.send(
-            'Wrong syntax, ```$lottery.new_lottery "LOTTERY NAME" STRIKE_ETH_BLOCK TICKET_PRICE(optional) TICKET_MIN_NUMBER(optional) TICKET_MAX_NUMBER(optional)```'  # noqa: E501
+            'Wrong syntax, ```!lottery.new_lottery "LOTTERY NAME" STRIKE_ETH_BLOCK TICKET_PRICE(optional) TICKET_MIN_NUMBER(optional) TICKET_MAX_NUMBER(optional)```'  # noqa: E501
         )
 
 
@@ -89,7 +89,7 @@ async def view_lottery(ctx, name: str):
 @view_lottery.error
 async def view_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('Wrong syntax, ```$lottery.view_lottery "LOTTERY NAME"```')
+        await ctx.send('Wrong syntax, ```!lottery.view_lottery "LOTTERY NAME"```')
 
 
 @commands.command(aliases=["list", "active"])

@@ -61,7 +61,7 @@ async def buy_ticket(ctx, lottery_name: str):
 @buy_ticket.error
 async def buy_ticket_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('Wrong syntax, ```$lottery.buy_ticket "LOTTERY NAME"```')
+        await ctx.send('Wrong syntax, ```!lottery.buy_ticket "LOTTERY NAME"```')
 
 
 @commands.command(aliases=["tickets"])
@@ -84,7 +84,7 @@ async def my_tickets(ctx, lottery_name: str):
 @my_tickets.error
 async def my_tickets_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('Wrong syntax, ```$lottery.my_tickets "LOTTERY NAME"```')
+        await ctx.send('Wrong syntax, ```!lottery.my_tickets "LOTTERY NAME"```')
 
 
 def setup(bot):

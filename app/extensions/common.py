@@ -11,18 +11,18 @@ async def help(ctx):
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     # add admin help
     if any([role for role in user_roles if role in ROLES_CAN_CONTROL_BOT]):
-        widget.add_field(name="$lottery.new_lottery", value="`Create a new lottery`", inline=False)
+        widget.add_field(name="!lottery.new_lottery", value="`Create a new lottery`", inline=False)
     # default help
-    widget.add_field(name="$lottery.list", value="`Display active lotteries`", inline=False)
-    widget.add_field(name="$lottery.view", value="`Display lottery information`", inline=False)
-    widget.add_field(name="$lottery.tickets", value="`My tickets`", inline=False)
-    widget.add_field(name="$lottery.buy", value="`Buy ticket`", inline=False)
-    widget.add_field(name="$lottery.wallet", value="`View my balance`", inline=False)
+    widget.add_field(name="!lottery.list", value="`Display active lotteries`", inline=False)
+    widget.add_field(name="!lottery.view", value="`Display lottery information`", inline=False)
+    widget.add_field(name="!lottery.tickets", value="`My tickets`", inline=False)
+    widget.add_field(name="!lottery.buy", value="`Buy ticket`", inline=False)
+    widget.add_field(name="!lottery.wallet", value="`View my balance`", inline=False)
     widget.add_field(
-        name="$lottery.withdraw", value="`Withdraw eco points from my balance`", inline=False
+        name="!lottery.withdraw", value="`Withdraw eco points from my balance`", inline=False
     )
     widget.add_field(
-        name="$lottery.deposit", value="`Deposit eco points to my balance`", inline=False
+        name="!lottery.deposit", value="`Deposit eco points to my balance`", inline=False
     )
     await ctx.send(embed=widget)
 
