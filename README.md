@@ -3,6 +3,10 @@
 A bot that can create lotteries with verifiable randomness
 
 
+## How to use
+[Check tutorial](https://github.com/eco-community/lottery-bot/blob/main/docs/Tutorial.md)
+
+
 ## How verifiable randomness works
 - users know beforehand at which Ethereum block the lottery will be played
 - lottery uses block hash of the future block as a seed for randomness
