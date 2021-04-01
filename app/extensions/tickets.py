@@ -15,7 +15,7 @@ from app.constants import LotteryStatus
 cryptogen = SystemRandom()
 
 
-@commands.command()
+@commands.command(aliases=["buy"])
 async def buy_ticket(ctx, lottery_name: str):
     await ensure_registered(ctx.author.id)
     # ticket buying logic
@@ -64,7 +64,7 @@ async def buy_ticket_error(ctx, error):
         await ctx.send('Wrong syntax, ```$lottery.buy_ticket "LOTTERY NAME"```')
 
 
-@commands.command()
+@commands.command(aliases=["tickets"])
 async def my_tickets(ctx, lottery_name: str):
     lottery = await Lottery.get_or_none(name=lottery_name)
     if not lottery:

@@ -18,7 +18,7 @@ from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_C
 
 
 @commands.has_any_role(*ROLES_CAN_CONTROL_BOT)
-@commands.command()
+@commands.command(aliases=["new", "create"])
 async def new_lottery(
     ctx,
     name: str,
@@ -57,7 +57,7 @@ async def new_lottery_error(ctx, error):
         )
 
 
-@commands.command()
+@commands.command(aliases=["view"])
 async def view_lottery(ctx, name: str):
     lottery = await Lottery.get_or_none(name=name)
     if not lottery:
@@ -74,6 +74,11 @@ async def view_lottery(ctx, name: str):
     widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
     widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
     widget.add_field(
+        name="Winning tickets:",
+        value=f"{', '.join(map(str, lottery.winning_tickets)) if lottery.winning_tickets else '-'}",
+        inline=False,
+    )
+    widget.add_field(
         name="Strike Date (estimated):",
         value=f"[{lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC](<https://etherscan.io/block/countdown/{lottery.strike_eth_block}>)",  # noqa: E501
         inline=False,
@@ -87,7 +92,7 @@ async def view_lottery_error(ctx, error):
         await ctx.send('Wrong syntax, ```$lottery.view_lottery "LOTTERY NAME"```')
 
 
-@commands.command()
+@commands.command(aliases=["list", "active"])
 async def lotteries(ctx):
     lotteries_list = await Lottery.exclude(status=LotteryStatus.ENDED)
     if not lotteries_list:

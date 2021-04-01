@@ -10,7 +10,7 @@ from app.models import User
 from app.utils import ensure_registered, pp_points
 
 
-@commands.command()
+@commands.command(aliases=["wallet", "balance"])
 async def my_wallet(ctx):
     user = await ensure_registered(ctx.author.id)
     await ctx.send(f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}<:points:819648258112225316>")
