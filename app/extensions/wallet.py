@@ -25,7 +25,7 @@ async def withdraw(ctx):
         if old_balance >= 1:
             user.balance = 0
             await user.save(update_fields=["balance", "modified_at"])
-            await ctx.send(f"!send {ctx.author.mention} {int(old_balance)}")
+            await ctx.send(f"!send <@!{ctx.author.id}> {int(old_balance)}")
         else:
             await ctx.send(
                 f"{ctx.author.mention} minimum withdrawal amount is 1<:points:819648258112225316> (you have {pp_points(user.balance)}<:points:819648258112225316>)"  # noqa: E501
