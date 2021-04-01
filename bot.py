@@ -13,7 +13,7 @@ from app.utils import use_sentry
 # initialize bot params
 intents = Intents.default()
 intents.members = True
-bot = commands.Bot(command_prefix="$lottery.", help_command=None, intents=intents)
+bot = commands.Bot(command_prefix="!lottery.", help_command=None, intents=intents)
 
 
 # init sentry SDK
