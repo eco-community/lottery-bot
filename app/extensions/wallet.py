@@ -43,27 +43,39 @@ async def deposit(ctx):
 class WalletCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.points_regex = re.compile("<:points:819648258112225316>(\\d*\\.?\\d+)")
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        """Refill user's balance via listening for messages from The Accountant bot"""
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        """Refill user's balance via listening for reactions to messages from The Accountant bot"""
+
+        if payload.user_id != config.ACCOUNTANT_BOT_ID:
+            # we need to only refill balance if it was The Accountant bot who reacted to message
+            return
+
+        channel = self.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
 
         if (
-            # if message is from The Accountant Bot
-            message.author.id == config.ACCOUNTANT_BOT_ID
-            and "I’ve recorded that you transferred" in message.content
-            # and there were two mentions in the message
-            and len(message.raw_mentions) == 2
-            # and lottery bot was marked as receiver
-            and self.bot.user.id == message.raw_mentions[1]
+            # if user tried to send points in message
+            "!send" in message.content
+            # and there were single mention in the message
+            and len(message.raw_mentions) == 1
+            # and lottery bot was mentioned
+            and self.bot.user.id in message.raw_mentions
         ):
-            mentioned_user_id = message.raw_mentions[0]
-            await ensure_registered(mentioned_user_id)
-            points = Decimal(self.points_regex.findall(message.system_content)[0])
-            await User.filter(id=mentioned_user_id).update(balance=F("balance") + points)  # prevent race conditions
+            await ensure_registered(message.author.id)
+            # remove bot mention from content
+            content_no_mentions = message.system_content.replace(str(self.bot.user.id), "")
+            # remove comma from string (because of The Accountant Bot)
+            content_no_mentions_no_comma = content_no_mentions.replace(",", "")
+            # parse all numbers from message
+            list_of_numbers = re.findall("\\d*[\\.]?\\d+", content_no_mentions_no_comma)
+            # points should be the first number
+            str_points = list_of_numbers[0]
+            points = Decimal(str_points)
+            await User.filter(id=message.author.id).update(balance=F("balance") + points)  # prevent race conditions
             await message.channel.send(
-                f"<@{mentioned_user_id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>"
+                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>"
             )
 
 
