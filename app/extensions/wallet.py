@@ -20,7 +20,7 @@ async def my_wallet(ctx):
 async def withdraw(ctx):
     await ensure_registered(ctx.author.id)
     async with in_transaction():  # prevent race conditions via select_for_update + in_transaction
-        user = await User.all().select_for_update().get(id=ctx.author.id)
+        user = await User.filter(id=ctx.author.id).select_for_update(nowait=True).get(id=ctx.author.id)
         old_balance = user.balance
         if old_balance >= 1:
             user.balance = 0

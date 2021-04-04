@@ -21,7 +21,8 @@ async def buy_ticket(ctx, lottery_name: str):
     # ticket buying logic
     try:
         async with in_transaction():  # prevent race conditions via select_for_update + in_transaction
-            user = await User.all().select_for_update().get(id=ctx.author.id)  # select user 2nd time to lock it's row
+            # select user 2nd time to lock it's row
+            user = await User.filter(id=ctx.author.id).select_for_update(nowait=True).get(id=ctx.author.id)
             # validate that lottery exists
             lottery = await Lottery.get_or_none(name=lottery_name)
             if not lottery:
