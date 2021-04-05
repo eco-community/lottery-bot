@@ -39,6 +39,7 @@ The ticket price will be deducted from our lottery wallet, so when we check via 
 
 - when a lottery is close to the strike date (by default 5 hours) we can't buy tickets
 - when a lottery has ended
+- when all tickets were sold
 
 
 ### How to view tickets
@@ -48,5 +49,5 @@ To view tickets for the `Test Lottery,` we can use this command
 
 ### How to withdraw eco points
 To withdraw eco points please use bellow command  
-`!lottery.withdraw`
+`!lottery.withdraw`  
 This will send all points from your lottery balance to your account.
