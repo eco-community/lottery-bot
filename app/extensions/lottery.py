@@ -40,28 +40,37 @@ async def new_lottery(
         lottery.strike_date_eta = await get_eta_to_block(strike_eth_block)
     except BlockAlreadyMinedException:
         # block has already passed
-        return await ctx.send(f"Error, block `{strike_eth_block}` already passed, choose a different block")
+        return await ctx.send(
+            f"{ctx.author.mention}, error, block `{strike_eth_block}` already passed, choose a different block"
+        )
     # save lottery
     try:
         await lottery.save()
     except exceptions.IntegrityError:
-        return await ctx.send(f"Error, lottery `{name}` already exists, choose a different name")
-    await ctx.send(f"Success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC")
+        return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` already exists, choose a different name")
+    await ctx.send(
+        f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"
+    )
 
 
 @new_lottery.error
 async def new_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
         await ctx.send(
-            'Wrong syntax, ```!lottery.new_lottery "LOTTERY NAME" STRIKE_ETH_BLOCK TICKET_PRICE(optional) TICKET_MIN_NUMBER(optional) TICKET_MAX_NUMBER(optional)```'  # noqa: E501
+            f'{ctx.author.mention}, wrong syntax, ```!lottery.new_lottery "LOTTERY NAME" STRIKE_ETH_BLOCK TICKET_PRICE(optional) TICKET_MIN_NUMBER(optional) TICKET_MAX_NUMBER(optional)```'  # noqa: E501
         )
 
 
 @commands.command(aliases=["view"])
 async def view_lottery(ctx, name: str):
-    lottery = await Lottery.get_or_none(name=name)
+    lottery = (
+        await Lottery.filter(name=name)
+        .prefetch_related("tickets")
+        .annotate(total_tickets=Count("tickets"))
+        .get_or_none(name=name)
+    )
     if not lottery:
-        return await ctx.send(f"Error, lottery `{name}` doesn't exist")
+        return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` doesn't exist")
     widget = Embed(description=f"{lottery.name} information", color=0x03D692, title=f"{lottery.name}")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     widget.add_field(name="Ticket price:", value=f"{int(lottery.ticket_price)}", inline=False)
@@ -73,6 +82,9 @@ async def view_lottery(ctx, name: str):
     widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
     widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
     widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
+    widget.add_field(
+        name="Tickets left:", value=f"{lottery.possible_tickets_count - lottery.total_tickets}", inline=False
+    )
     widget.add_field(
         name="Winning tickets:",
         value=f"{', '.join(map(str, lottery.winning_tickets)) if lottery.winning_tickets else '-'}",
@@ -89,14 +101,14 @@ async def view_lottery(ctx, name: str):
 @view_lottery.error
 async def view_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('Wrong syntax, ```!lottery.view_lottery "LOTTERY NAME"```')
+        await ctx.send('{ctx.author.mention}, wrong syntax, ```!lottery.view "LOTTERY NAME"```')
 
 
 @commands.command(aliases=["list", "active"])
 async def lotteries(ctx):
     lotteries_list = await Lottery.exclude(status=LotteryStatus.ENDED)
     if not lotteries_list:
-        return await ctx.send("We don't have any active lotteries")
+        return await ctx.send("{ctx.author.mention}, we don't have any active lotteries")
     widget = Embed(description="List of all lotteries", color=0x03D692, title="All lotteries")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     for lottery in lotteries_list:

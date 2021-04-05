@@ -26,22 +26,24 @@ async def buy_ticket(ctx, lottery_name: str):
             # validate that lottery exists
             lottery = await Lottery.get_or_none(name=lottery_name)
             if not lottery:
-                return await ctx.send(f"Error, lottery `{lottery_name}` doesn't exist")
+                return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
             # validate that we allow selling tickets
             if lottery.status == LotteryStatus.STOP_SALES:
                 return await ctx.send(
-                    f"Tickets can't be bought for `{lottery_name}` because there are no tickets left or it's close to strike date"  # noqa: E501
+                    f"{ctx.author.mention}, tickets can't be bought for `{lottery_name}` because there are no tickets left or it's close to strike date"  # noqa: E501
                 )
             elif lottery.status == LotteryStatus.STRIKED:
                 return await ctx.send(
-                    f"Tickets can't be bought for `{lottery_name}` because winning tickets were already selected"
+                    f"{ctx.author.mention}, tickets can't be bought for `{lottery_name}` because winning tickets were already selected"  # noqa: E501
                 )
             elif lottery.status == LotteryStatus.ENDED:
-                return await ctx.send(f"Tickets can't be bought for `{lottery_name}` because it has ended")
+                return await ctx.send(
+                    f"{ctx.author.mention}, tickets can't be bought for `{lottery_name}` because it has ended"
+                )
             # validate user balance
             if user.balance < lottery.ticket_price:
                 return await ctx.send(
-                    f"Not enough points, You only have `{pp_points(user.balance)}`<:points:819648258112225316> on your deposit and ticket price is `{int(lottery.ticket_price)}`<:points:819648258112225316>"  # noqa: E501
+                    f"{ctx.author.mention}, not enough points, you only have `{pp_points(user.balance)}`<:points:819648258112225316> on your deposit and ticket price is `{int(lottery.ticket_price)}`<:points:819648258112225316>"  # noqa: E501
                 )
             user.balance = F("balance") - lottery.ticket_price  # to prevent race conditions
             await user.save(update_fields=["balance", "modified_at"])
@@ -56,37 +58,38 @@ async def buy_ticket(ctx, lottery_name: str):
                     ticket_number=cryptogen.choice(
                         [
                             _
-                            for _ in range(lottery.ticket_min_number, lottery.ticket_max_number - 1)
+                            # make range to behave as inclusive range, this way ticket with max_number could be won
+                            for _ in range(lottery.ticket_min_number, lottery.ticket_max_number + 1)
                             if _ not in ticket_numbers
                         ]
                     ),
                 )
                 await user.refresh_from_db(fields=["balance"])
                 await ctx.send(
-                    f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
+                    f"{ctx.author.mention}, you bought ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
                 )
             except IndexError:
                 # it means that all tickets were sold, stop ticket sales for lottery
                 lottery.status = LotteryStatus.STOP_SALES
                 await lottery.save(update_fields=["status", "modified_at"])
-                await ctx.send("Ouch, the last ticket was sold a moment ago")
+                await ctx.send("{ctx.author.mention}, ouch, the last ticket was sold a moment ago")
     except exceptions.IntegrityError:
         # could be caused by duplicate tickets because we have a higher probability of collisions
         # it's safe to have a collision in tickets because balance will be rolled back in transaction
-        await ctx.send(f"Error, {ctx.author.mention}, please try again")
+        await ctx.send(f"{ctx.author.mention}, error, {ctx.author.mention}, please try again")
 
 
 @buy_ticket.error
 async def buy_ticket_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('Wrong syntax, ```!lottery.buy_ticket "LOTTERY NAME"```')
+        await ctx.send('{ctx.author.mention}, wrong syntax, ```!lottery.buy "LOTTERY NAME"```')
 
 
 @commands.command(aliases=["tickets"])
 async def my_tickets(ctx, lottery_name: str):
     lottery = await Lottery.get_or_none(name=lottery_name)
     if not lottery:
-        return await ctx.send(f"Error, lottery `{lottery_name}` doesn't exist")
+        return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
     tickets = await Ticket.filter(Q(lottery__id=lottery.id) & Q(user__id=ctx.author.id))
     widget = Embed(
         description=f"You have {len(tickets)} tickets for the {lottery_name}",
@@ -102,7 +105,7 @@ async def my_tickets(ctx, lottery_name: str):
 @my_tickets.error
 async def my_tickets_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('Wrong syntax, ```!lottery.my_tickets "LOTTERY NAME"```')
+        await ctx.send('{ctx.author.mention}, wrong syntax, ```!lottery.tickets "LOTTERY NAME"```')
 
 
 def setup(bot):

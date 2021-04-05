@@ -36,7 +36,7 @@ async def withdraw(ctx):
 async def deposit(ctx):
     await ensure_registered(ctx.author.id)
     await ctx.send(
-        f"To deposit 10<:points:819648258112225316> to your account send command\n `!send {ctx.bot.user.mention} 10`"
+        f"{ctx.author.mention}, to deposit 10<:points:819648258112225316> to your account send command\n `!send {ctx.bot.user.mention} 10`"  # noqa: E501
     )
 
 
