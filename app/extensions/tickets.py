@@ -29,7 +29,9 @@ async def buy_ticket(ctx, lottery_name: str):
                 return await ctx.send(f"Error, lottery `{lottery_name}` doesn't exist")
             # validate that we allow selling tickets
             if lottery.status == LotteryStatus.STOP_SALES:
-                return await ctx.send(f"Tickets can't be bought for `{lottery_name}` because it's close to strike date")
+                return await ctx.send(
+                    f"Tickets can't be bought for `{lottery_name}` because there are no tickets left or it's close to strike date"  # noqa: E501
+                )
             elif lottery.status == LotteryStatus.STRIKED:
                 return await ctx.send(
                     f"Tickets can't be bought for `{lottery_name}` because winning tickets were already selected"
@@ -43,16 +45,31 @@ async def buy_ticket(ctx, lottery_name: str):
                 )
             user.balance = F("balance") - lottery.ticket_price  # to prevent race conditions
             await user.save(update_fields=["balance", "modified_at"])
+            # to generate random ticket number that doesn't have collisions we will need to grab all ticket numbers
+            # from database and then check in python which numbers are available
+            ticket_numbers = await Ticket.filter(lottery=lottery).values_list("ticket_number", flat=True)
             # create ticket for user
-            ticket = await Ticket.create(
-                user=user,
-                lottery=lottery,
-                ticket_number=cryptogen.randint(lottery.ticket_min_number, lottery.ticket_max_number - 1),
-            )
-            await user.refresh_from_db(fields=["balance"])
-            await ctx.send(
-                f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
-            )
+            try:
+                ticket = await Ticket.create(
+                    user=user,
+                    lottery=lottery,
+                    ticket_number=cryptogen.choice(
+                        [
+                            _
+                            for _ in range(lottery.ticket_min_number, lottery.ticket_max_number - 1)
+                            if _ not in ticket_numbers
+                        ]
+                    ),
+                )
+                await user.refresh_from_db(fields=["balance"])
+                await ctx.send(
+                    f"You bought ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
+                )
+            except IndexError:
+                # it means that all tickets were sold, stop ticket sales for lottery
+                lottery.status = LotteryStatus.STOP_SALES
+                await lottery.save(update_fields=["status", "modified_at"])
+                await ctx.send("Ouch, the last ticket was sold a moment ago")
     except exceptions.IntegrityError:
         # could be caused by duplicate tickets because we have a higher probability of collisions
         # it's safe to have a collision in tickets because balance will be rolled back in transaction
