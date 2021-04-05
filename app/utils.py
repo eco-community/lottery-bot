@@ -32,7 +32,13 @@ def use_sentry(client, **sentry_args):
         # don't report errors to sentry related to wrong permissions
         if not isinstance(
             error,
-            (commands.MissingRole, commands.MissingAnyRole, commands.BadArgument, commands.MissingRequiredArgument),
+            (
+                commands.MissingRole,
+                commands.MissingAnyRole,
+                commands.BadArgument,
+                commands.MissingRequiredArgument,
+                commands.errors.CommandNotFound,
+            ),
         ):
             raise error
 

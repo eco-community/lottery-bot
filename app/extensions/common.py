@@ -17,13 +17,9 @@ async def help(ctx):
     widget.add_field(name="!lottery.view", value="`Display lottery information`", inline=False)
     widget.add_field(name="!lottery.tickets", value="`My tickets`", inline=False)
     widget.add_field(name="!lottery.buy", value="`Buy ticket`", inline=False)
-    widget.add_field(name="!lottery.wallet", value="`View my balance`", inline=False)
-    widget.add_field(
-        name="!lottery.withdraw", value="`Withdraw eco points from my balance`", inline=False
-    )
-    widget.add_field(
-        name="!lottery.deposit", value="`Deposit eco points to my balance`", inline=False
-    )
+    widget.add_field(name="!lottery.wallet", value="`View my lottery wallet`", inline=False)
+    widget.add_field(name="!lottery.withdraw", value="`Withdraw eco points from my lottery wallet`", inline=False)
+    widget.add_field(name="!lottery.deposit", value="`Deposit eco points to my lottery wallet`", inline=False)
     await ctx.send(embed=widget)
 
 

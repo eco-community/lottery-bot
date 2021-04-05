@@ -1,6 +1,7 @@
 import re
-import discord
 from decimal import Decimal
+
+import discord
 from discord.ext import commands
 from tortoise.expressions import F
 from tortoise.transactions import in_transaction
@@ -20,7 +21,7 @@ async def my_wallet(ctx):
 async def withdraw(ctx):
     await ensure_registered(ctx.author.id)
     async with in_transaction():  # prevent race conditions via select_for_update + in_transaction
-        user = await User.filter(id=ctx.author.id).select_for_update(nowait=True).get(id=ctx.author.id)
+        user = await User.filter(id=ctx.author.id).select_for_update().get(id=ctx.author.id)
         old_balance = user.balance
         if old_balance >= 1:
             user.balance = 0
@@ -36,7 +37,7 @@ async def withdraw(ctx):
 async def deposit(ctx):
     await ensure_registered(ctx.author.id)
     await ctx.send(
-        f"{ctx.author.mention}, to deposit 10<:points:819648258112225316> to your account send command\n `!send {ctx.bot.user.mention} 10`"  # noqa: E501
+        f"{ctx.author.mention}, to deposit <:points:819648258112225316> to your lottery wallet send command\n `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`"  # noqa: E501
     )
 
 
@@ -75,7 +76,7 @@ class WalletCog(commands.Cog):
             points = Decimal(str_points)
             await User.filter(id=message.author.id).update(balance=F("balance") + points)  # prevent race conditions
             await message.channel.send(
-                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>"
+                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>.\nTo participate, `!lottery.buy [lottery name]`"  # noqa: E501
             )
 
 

@@ -57,12 +57,13 @@ async def new_lottery(
 async def new_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
         await ctx.send(
-            f'{ctx.author.mention}, wrong syntax, ```!lottery.new_lottery "LOTTERY NAME" STRIKE_ETH_BLOCK TICKET_PRICE(optional) TICKET_MIN_NUMBER(optional) TICKET_MAX_NUMBER(optional)```'  # noqa: E501
+            f'{ctx.author.mention}, wrong syntax, ```!lottery.new_lottery "[lottery name]" [ethereum block] [ticket price](optional) [ticket min number](optional) [ticket max number](optional)```'  # noqa: E501
         )
 
 
 @commands.command(aliases=["view"])
-async def view_lottery(ctx, name: str):
+async def view_lottery(ctx, *, name):
+    name = name.replace('"', "")
     lottery = (
         await Lottery.filter(name=name)
         .prefetch_related("tickets")
@@ -101,7 +102,7 @@ async def view_lottery(ctx, name: str):
 @view_lottery.error
 async def view_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send(f'{ctx.author.mention}, wrong syntax, ```!lottery.view "LOTTERY NAME"```')
+        await ctx.send(f"{ctx.author.mention}, wrong syntax, ```!lottery.view [lottery name]```")
 
 
 @commands.command(aliases=["list", "active"])

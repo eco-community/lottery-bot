@@ -25,7 +25,7 @@ A bot that can create lotteries with verifiable randomness
 ## How wallet works
 - users can replenish their wallet via The Accountant bot `!send` command
 - users can withdraw from their wallet and eco points will be send to them via The Accountant bot `!send` command
-- users can buy lottery tickets using balance from their wallet
+- users can buy lottery tickets using balance from their wallet (aka lottery wallet)
 
 
 ## Installation
