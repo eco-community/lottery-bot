@@ -49,7 +49,7 @@ async def new_lottery(
     except exceptions.IntegrityError:
         return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` already exists, choose a different name")
     await ctx.send(
-        f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"
+        f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"  # noqa: E501
     )
 
 
@@ -101,14 +101,14 @@ async def view_lottery(ctx, name: str):
 @view_lottery.error
 async def view_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('{ctx.author.mention}, wrong syntax, ```!lottery.view "LOTTERY NAME"```')
+        await ctx.send(f'{ctx.author.mention}, wrong syntax, ```!lottery.view "LOTTERY NAME"```')
 
 
 @commands.command(aliases=["list", "active"])
 async def lotteries(ctx):
     lotteries_list = await Lottery.exclude(status=LotteryStatus.ENDED)
     if not lotteries_list:
-        return await ctx.send("{ctx.author.mention}, we don't have any active lotteries")
+        return await ctx.send(f"{ctx.author.mention}, we don't have any active lotteries")
     widget = Embed(description="List of all lotteries", color=0x03D692, title="All lotteries")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     for lottery in lotteries_list:

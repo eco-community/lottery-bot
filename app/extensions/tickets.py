@@ -72,7 +72,7 @@ async def buy_ticket(ctx, lottery_name: str):
                 # it means that all tickets were sold, stop ticket sales for lottery
                 lottery.status = LotteryStatus.STOP_SALES
                 await lottery.save(update_fields=["status", "modified_at"])
-                await ctx.send("{ctx.author.mention}, ouch, the last ticket was sold a moment ago")
+                await ctx.send(f"{ctx.author.mention}, ouch, the last ticket was sold a moment ago")
     except exceptions.IntegrityError:
         # could be caused by duplicate tickets because we have a higher probability of collisions
         # it's safe to have a collision in tickets because balance will be rolled back in transaction
@@ -82,7 +82,7 @@ async def buy_ticket(ctx, lottery_name: str):
 @buy_ticket.error
 async def buy_ticket_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('{ctx.author.mention}, wrong syntax, ```!lottery.buy "LOTTERY NAME"```')
+        await ctx.send(f'{ctx.author.mention}, wrong syntax, ```!lottery.buy "LOTTERY NAME"```')
 
 
 @commands.command(aliases=["tickets"])
@@ -105,7 +105,7 @@ async def my_tickets(ctx, lottery_name: str):
 @my_tickets.error
 async def my_tickets_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send('{ctx.author.mention}, wrong syntax, ```!lottery.tickets "LOTTERY NAME"```')
+        await ctx.send(f'{ctx.author.mention}, wrong syntax, ```!lottery.tickets "LOTTERY NAME"```')
 
 
 def setup(bot):
