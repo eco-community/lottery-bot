@@ -86,9 +86,12 @@ async def get_hash_for_block(block: int) -> str:
         block hash
     """
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://api.blockcypher.com/v1/eth/main/blocks/{block}") as response:
+        block_hex = hex(block)
+        async with session.get(
+            f"https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag={block_hex}&boolean=true&apikey={config.ETHERSCAN_API_KEY}"  # noqa: E501
+        ) as response:
             block_info = await response.json()
-            return block_info["hash"]
+            return block_info["result"]["hash"]
 
 
 async def select_winning_tickets(

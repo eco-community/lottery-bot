@@ -14,7 +14,7 @@ from constants import ROLES_CAN_CONTROL_BOT
 from app.models import Lottery, User
 from app.exceptions import BlockAlreadyMinedException
 from app.utils import get_eta_to_block, select_winning_tickets, get_hash_for_block, pp_points
-from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS
+from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS, GREEN, GOLD
 
 
 @commands.has_any_role(*ROLES_CAN_CONTROL_BOT)
@@ -57,7 +57,7 @@ async def new_lottery(
 async def new_lottery_error(ctx, error):
     if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
         await ctx.send(
-            f'{ctx.author.mention}, wrong syntax, ```!lottery.new_lottery "[lottery name]" [ethereum block] [ticket price](optional) [ticket min number](optional) [ticket max number](optional)```'  # noqa: E501
+            f'{ctx.author.mention}, wrong syntax, ```!lottery.new "[lottery name]" [ethereum block] [ticket price](optional) [ticket min number](optional) [ticket max number](optional)```'  # noqa: E501
         )
 
 
@@ -72,7 +72,7 @@ async def view_lottery(ctx, *, name):
     )
     if not lottery:
         return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` doesn't exist")
-    widget = Embed(description=f"{lottery.name} information", color=0x03D692, title=f"{lottery.name}")
+    widget = Embed(description=f"{lottery.name} information", color=GREEN, title=f"{lottery.name}")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     widget.add_field(name="Ticket price:", value=f"{int(lottery.ticket_price)}", inline=False)
     widget.add_field(
@@ -96,7 +96,7 @@ async def view_lottery(ctx, *, name):
         value=f"[{lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC](<https://etherscan.io/block/countdown/{lottery.strike_eth_block}>)",  # noqa: E501
         inline=False,
     )
-    await ctx.send(embed=widget)
+    await ctx.send(content=ctx.author.mention, embed=widget)
 
 
 @view_lottery.error
@@ -110,7 +110,7 @@ async def lotteries(ctx):
     lotteries_list = await Lottery.exclude(status=LotteryStatus.ENDED)
     if not lotteries_list:
         return await ctx.send(f"{ctx.author.mention}, we don't have any active lotteries")
-    widget = Embed(description="List of all lotteries", color=0x03D692, title="All lotteries")
+    widget = Embed(description="List of all lotteries", color=GREEN, title="All lotteries")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     for lottery in lotteries_list:
         widget.add_field(
@@ -118,7 +118,7 @@ async def lotteries(ctx):
             value=f"Ticket price {pp_points(lottery.ticket_price)}<:points:819648258112225316>",
             inline=False,
         )
-    await ctx.send(embed=widget)
+    await ctx.send(content=ctx.author.mention, embed=widget)
 
 
 class LotteryCog(commands.Cog):
@@ -204,14 +204,33 @@ class LotteryCog(commands.Cog):
                 # remove old winning pool (because it was paid to the winners)
                 if old_winning_pool:
                     await Lottery.filter(Q(status=LotteryStatus.ENDED) & Q(has_winners=False)).update(has_winners=True)
-                winners_mentions = [f"<@{_}>" for _ in winners_ids]
+                winners_mentions = [f"<@!{_}>" for _ in winners_ids]
                 winners_mentions_str = ", ".join(winners_mentions)
             else:
                 bulk_save_no_winners.append(lottery.id)
-            # send notification to the channel
-            await notification_channel.send(
-                f"`{lottery.name}` striked, winning tickets: `{', '.join(map(str, lottery.winning_tickets))}`, winners: {winners_mentions_str if winners_ids else 'none'}"  # noqa: E501
+            widget = Embed(
+                description=f"`{lottery.name}` striked",
+                color=GOLD,
+                title=lottery.name,
             )
+            widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+            widget.add_field(
+                name="Winning tickets:",
+                value=f"`{', '.join(map(str, lottery.winning_tickets))}`",
+                inline=False,
+            )
+            if winners_ids:
+                widget.add_field(name="Winners:", value=winners_mentions_str, inline=False)
+                # send notification to the channel
+                await notification_channel.send(content=winners_mentions_str, embed=widget)
+            else:
+                widget.add_field(
+                    name="Winners:",
+                    value="Nobody won the lottery, winning pool will be added to the next lottery",
+                    inline=False,
+                )
+                # send notification to the channel
+                await notification_channel.send(embed=widget)
         # bulk change lotteries to LotteryStatus.ENDED
         if bulk_save_has_winners:
             await Lottery.filter(id__in=bulk_save_has_winners).update(status=LotteryStatus.ENDED, has_winners=True)

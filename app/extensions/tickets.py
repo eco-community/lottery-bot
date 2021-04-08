@@ -7,7 +7,7 @@ from tortoise.transactions import in_transaction
 
 from app.models import Lottery, Ticket, User
 from app.utils import ensure_registered, pp_points
-from app.constants import LotteryStatus
+from app.constants import LotteryStatus, GREEN
 
 
 cryptogen = SystemRandom()
@@ -87,9 +87,9 @@ async def my_tickets(ctx, *, lottery_name):
         return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
     tickets = await Ticket.filter(Q(lottery__id=lottery.id) & Q(user__id=ctx.author.id))
     widget = Embed(
-        description=f"{ctx.author.mention}, you have `{len(tickets)}` tickets for `{lottery_name}`",
-        color=0x03D692,
-        title="Your tickets",
+        description=f"You have `{len(tickets)}` tickets for `{lottery_name}`",
+        color=GREEN,
+        title=f"{lottery_name} tickets",
     )
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     if len(tickets):
@@ -98,7 +98,7 @@ async def my_tickets(ctx, *, lottery_name):
             value=f"`{', '.join([str(_.ticket_number) for _ in tickets])}`",
             inline=False,
         )
-    await ctx.send(embed=widget)
+    await ctx.send(content=ctx.author.mention, embed=widget)
 
 
 @my_tickets.error
