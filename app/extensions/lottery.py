@@ -121,6 +121,26 @@ async def lotteries(ctx):
     await ctx.send(content=ctx.author.mention, embed=widget)
 
 
+@commands.command(aliases=["history"])
+async def results(ctx):
+    lotteries_ended = (
+        await Lottery.filter(status=LotteryStatus.ENDED).prefetch_related("tickets").order_by("-created_at")
+    )
+    if not lotteries_ended:
+        return await ctx.send(f"{ctx.author.mention}, we don't have any past lotteries")
+    widget = Embed(description="Results for previous lotteries", color=GREEN, title="History of lotteries")
+    widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+    for lottery in lotteries_ended:
+        if lottery.has_winners:
+            winners_ids = {_.user_id for _ in lottery.tickets if _.ticket_number in lottery.winning_tickets}
+            winners_mentions = [f"<@!{_}>" for _ in winners_ids]
+            winners_mentions_str = ", ".join(winners_mentions)
+            widget.add_field(name=lottery.name, value=f"Winners: {winners_mentions_str}", inline=False)
+        else:
+            widget.add_field(name=lottery.name, value="Winners: `no winners`", inline=False)
+    await ctx.send(content=ctx.author.mention, embed=widget)
+
+
 class LotteryCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -260,4 +280,5 @@ def setup(bot):
     bot.add_command(new_lottery)
     bot.add_command(view_lottery)
     bot.add_command(lotteries)
+    bot.add_command(results)
     bot.add_cog(LotteryCog(bot))

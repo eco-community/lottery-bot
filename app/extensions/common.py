@@ -15,6 +15,7 @@ async def help(ctx):
         widget.add_field(name="!lottery.new", value="`Create a new lottery`", inline=False)
     # default help
     widget.add_field(name="!lottery.list", value="`Display active lotteries`", inline=False)
+    widget.add_field(name="!lottery.history", value="`Display results for previous lotteries`", inline=False)
     widget.add_field(name="!lottery.view", value="`Display lottery information`", inline=False)
     widget.add_field(name="!lottery.tickets", value="`My tickets`", inline=False)
     widget.add_field(name="!lottery.buy", value="`Buy ticket`", inline=False)

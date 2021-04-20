@@ -1,9 +1,9 @@
-discord.py==1.6.0
+discord.py==1.7.1
 sentry-sdk==1.0.0
-tortoise-orm==0.17.1
+tortoise-orm==0.17.2
 asyncpg==0.22.0
-python-dotenv==0.15.0
-aerich==0.5.2
+python-dotenv==0.17.0
+aerich==0.5.3
 aiohttp==3.7.4.post0
 cchardet==2.1.7
 aiodns==2.0.0
