@@ -124,11 +124,11 @@ async def lotteries(ctx):
 @commands.command(aliases=["history"])
 async def results(ctx):
     lotteries_ended = (
-        await Lottery.filter(status=LotteryStatus.ENDED).prefetch_related("tickets").order_by("-created_at")
+        await Lottery.filter(status=LotteryStatus.ENDED).prefetch_related("tickets").order_by("-created_at").limit(10)
     )
     if not lotteries_ended:
         return await ctx.send(f"{ctx.author.mention}, we don't have any past lotteries")
-    widget = Embed(description="Results for previous lotteries", color=GREEN, title="History of lotteries")
+    widget = Embed(description="Results for last 10 lotteries", color=GREEN, title="History of lotteries")
     widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
     for lottery in lotteries_ended:
         if lottery.has_winners:
