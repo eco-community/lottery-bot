@@ -6,3 +6,4 @@ ACCOUNTANT_BOT_ID = 42424242
 ETHERSCAN_API_KEY = "xxxxxxxxxxx"
 CHECK_LOTTERY_STATUS_SECONDS = 60  # don't set to less than 18 seconds due to API rate limits
 LOG_LEVEL = "INFO"
+GUILD_IDS = [424242424242]  # to use slash commands we need specify guild ids

@@ -8,6 +8,7 @@ from tortoise.query_utils import Q
 from tortoise.functions import Count
 from tortoise import exceptions, timezone
 from tortoise.transactions import in_transaction
+from discord_slash import cog_ext, SlashContext
 
 import config
 from constants import ROLES_CAN_CONTROL_BOT
@@ -61,91 +62,99 @@ async def new_lottery_error(ctx, error):
         )
 
 
-@commands.command(aliases=["view"])
-async def view_lottery(ctx, *, name):
-    name = name.replace('"', "")
-    lottery = (
-        await Lottery.filter(name=name)
-        .prefetch_related("tickets")
-        .annotate(total_tickets=Count("tickets"))
-        .get_or_none(name=name)
-    )
-    if not lottery:
-        return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` doesn't exist")
-    widget = Embed(description=f"{lottery.name} information", color=GREEN, title=f"{lottery.name}")
-    widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
-    widget.add_field(name="Ticket price:", value=f"{int(lottery.ticket_price)}", inline=False)
-    widget.add_field(
-        name="Strike ETH block:",
-        value=f"[{lottery.strike_eth_block}](<https://etherscan.io/block/{lottery.strike_eth_block}>)",
-        inline=False,
-    )  # noqa: E501
-    widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
-    widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
-    widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
-    widget.add_field(
-        name="Tickets left:", value=f"{lottery.possible_tickets_count - lottery.total_tickets}", inline=False
-    )
-    widget.add_field(
-        name="Winning tickets:",
-        value=f"{', '.join(map(str, lottery.winning_tickets)) if lottery.winning_tickets else '-'}",
-        inline=False,
-    )
-    widget.add_field(
-        name="Strike Date (estimated):",
-        value=f"[{lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC](<https://etherscan.io/block/countdown/{lottery.strike_eth_block}>)",  # noqa: E501
-        inline=False,
-    )
-    await ctx.send(content=ctx.author.mention, embed=widget)
-
-
-@view_lottery.error
-async def view_lottery_error(ctx, error):
-    if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send(f"{ctx.author.mention}, wrong syntax, ```!lottery.view [lottery name]```")
-
-
-@commands.command(aliases=["list", "active"])
-async def lotteries(ctx):
-    lotteries_list = await Lottery.exclude(status=LotteryStatus.ENDED)
-    if not lotteries_list:
-        return await ctx.send(f"{ctx.author.mention}, we don't have any active lotteries")
-    widget = Embed(description="List of all lotteries", color=GREEN, title="All lotteries")
-    widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
-    for lottery in lotteries_list:
-        widget.add_field(
-            name=lottery.name,
-            value=f"Ticket price {pp_points(lottery.ticket_price)}<:points:819648258112225316>",
-            inline=False,
-        )
-    await ctx.send(content=ctx.author.mention, embed=widget)
-
-
-@commands.command(aliases=["history"])
-async def results(ctx):
-    lotteries_ended = (
-        await Lottery.filter(status=LotteryStatus.ENDED).prefetch_related("tickets").order_by("-created_at").limit(10)
-    )
-    if not lotteries_ended:
-        return await ctx.send(f"{ctx.author.mention}, we don't have any past lotteries")
-    widget = Embed(description="Results for last 10 lotteries", color=GREEN, title="History of lotteries")
-    widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
-    for lottery in lotteries_ended:
-        if lottery.has_winners:
-            winners_ids = {_.user_id for _ in lottery.tickets if _.ticket_number in lottery.winning_tickets}
-            winners_mentions = [f"<@!{_}>" for _ in winners_ids]
-            winners_mentions_str = ", ".join(winners_mentions)
-            widget.add_field(name=lottery.name, value=f"Winners: {winners_mentions_str}", inline=False)
-        else:
-            widget.add_field(name=lottery.name, value="Winners: `no winners`", inline=False)
-    await ctx.send(content=ctx.author.mention, embed=widget)
-
-
 class LotteryCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.lock = asyncio.Lock()
         self.lottery_status_cron_job.start()
+
+    @cog_ext.cog_subcommand(
+        base="lottery",
+        name="view",
+        guild_ids=config.GUILD_IDS,
+        description="Display lottery information",
+    )
+    async def view_lottery(self, ctx: SlashContext, lottery_name: str):
+        lottery = (
+            await Lottery.filter(name=lottery_name)
+            .prefetch_related("tickets")
+            .annotate(total_tickets=Count("tickets"))
+            .get_or_none(name=lottery_name)
+        )
+        if not lottery:
+            return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
+        widget = Embed(description=f"{lottery.name} information", color=GREEN, title=f"{lottery.name}")
+        widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+        widget.add_field(name="Ticket price:", value=f"{int(lottery.ticket_price)}", inline=False)
+        widget.add_field(
+            name="Strike ETH block:",
+            value=f"[{lottery.strike_eth_block}](<https://etherscan.io/block/{lottery.strike_eth_block}>)",
+            inline=False,
+        )  # noqa: E501
+        widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
+        widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
+        widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
+        widget.add_field(
+            name="Tickets left:", value=f"{lottery.possible_tickets_count - lottery.total_tickets}", inline=False
+        )
+        widget.add_field(
+            name="Winning tickets:",
+            value=f"{', '.join(map(str, lottery.winning_tickets)) if lottery.winning_tickets else '-'}",
+            inline=False,
+        )
+        widget.add_field(
+            name="Strike Date (estimated):",
+            value=f"[{lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC](<https://etherscan.io/block/countdown/{lottery.strike_eth_block}>)",  # noqa: E501
+            inline=False,
+        )
+        await ctx.send(content=ctx.author.mention, embed=widget)
+
+    @cog_ext.cog_subcommand(
+        base="lottery",
+        name="list",
+        guild_ids=config.GUILD_IDS,
+        description="Display active lotteries",
+    )
+    async def lotteries(self, ctx: SlashContext):
+        lotteries_list = await Lottery.exclude(status=LotteryStatus.ENDED)
+        if not lotteries_list:
+            return await ctx.send(f"{ctx.author.mention}, we don't have any active lotteries")
+        widget = Embed(description="List of all lotteries", color=GREEN, title="All lotteries")
+        widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+        for lottery in lotteries_list:
+            widget.add_field(
+                name=lottery.name,
+                value=f"Ticket price {pp_points(lottery.ticket_price)}<:points:819648258112225316>",
+                inline=False,
+            )
+        await ctx.send(content=ctx.author.mention, embed=widget)
+
+    @cog_ext.cog_subcommand(
+        base="lottery",
+        name="history",
+        guild_ids=config.GUILD_IDS,
+        description="Display results for previous lotteries",
+    )
+    async def history(self, ctx: SlashContext):
+        lotteries_ended = (
+            await Lottery.filter(status=LotteryStatus.ENDED)
+            .prefetch_related("tickets")
+            .order_by("-created_at")
+            .limit(10)
+        )
+        if not lotteries_ended:
+            return await ctx.send(f"{ctx.author.mention}, we don't have any past lotteries")
+        widget = Embed(description="Results for last 10 lotteries", color=GREEN, title="History of lotteries")
+        widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+        for lottery in lotteries_ended:
+            if lottery.has_winners:
+                winners_ids = {_.user_id for _ in lottery.tickets if _.ticket_number in lottery.winning_tickets}
+                winners_mentions = [f"<@!{_}>" for _ in winners_ids]
+                winners_mentions_str = ", ".join(winners_mentions)
+                widget.add_field(name=lottery.name, value=f"Winners: {winners_mentions_str}", inline=False)
+            else:
+                widget.add_field(name=lottery.name, value="Winners: `no winners`", inline=False)
+        await ctx.send(content=ctx.author.mention, embed=widget)
 
     async def _handle_stopping_sales(self) -> None:
         """Handle stopping sales for started lotteries if strike date is close enough"""
@@ -176,7 +185,7 @@ class LotteryCog(commands.Cog):
             except BlockAlreadyMinedException:
                 # block has been mined, we could select winning ticket numbers
                 block_hash = await get_hash_for_block(lottery.strike_eth_block)
-                lottery.winning_tickets = await select_winning_tickets(
+                lottery.winning_tickets = select_winning_tickets(
                     hash=block_hash,
                     min_number=lottery.ticket_min_number,
                     max_number=lottery.ticket_max_number,
@@ -278,7 +287,4 @@ class LotteryCog(commands.Cog):
 
 def setup(bot):
     bot.add_command(new_lottery)
-    bot.add_command(view_lottery)
-    bot.add_command(lotteries)
-    bot.add_command(results)
     bot.add_cog(LotteryCog(bot))

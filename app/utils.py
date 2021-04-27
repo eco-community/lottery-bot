@@ -94,7 +94,7 @@ async def get_hash_for_block(block: int) -> str:
             return block_info["result"]["hash"]
 
 
-async def select_winning_tickets(
+def select_winning_tickets(
     hash: str,
     min_number: int,
     max_number: int,

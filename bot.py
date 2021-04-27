@@ -4,6 +4,7 @@ from discord import Intents
 from tortoise import Tortoise
 from discord.ext import commands
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+from discord_slash import SlashCommand
 
 import config
 from constants import SENTRY_ENV_NAME, TORTOISE_ORM
@@ -14,6 +15,7 @@ from app.utils import use_sentry
 intents = Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix="!lottery.", help_command=None, intents=intents)
+SlashCommand(bot, sync_commands=True, sync_on_cog_reload=True, override_type=True)
 
 
 # init sentry SDK

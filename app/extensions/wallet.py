@@ -5,40 +5,11 @@ import discord
 from discord.ext import commands
 from tortoise.expressions import F
 from tortoise.transactions import in_transaction
+from discord_slash import cog_ext, SlashContext
 
 import config
 from app.models import User
 from app.utils import ensure_registered, pp_points
-
-
-@commands.command(aliases=["wallet", "balance"])
-async def my_wallet(ctx):
-    user = await ensure_registered(ctx.author.id)
-    await ctx.send(f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}<:points:819648258112225316>")
-
-
-@commands.command()
-async def withdraw(ctx):
-    await ensure_registered(ctx.author.id)
-    async with in_transaction():  # prevent race conditions via select_for_update + in_transaction
-        user = await User.filter(id=ctx.author.id).select_for_update().get(id=ctx.author.id)
-        old_balance = user.balance
-        if old_balance >= 1:
-            user.balance = 0
-            await user.save(update_fields=["balance", "modified_at"])
-            await ctx.send(f"!send <@!{ctx.author.id}> {int(old_balance)}")
-        else:
-            await ctx.send(
-                f"{ctx.author.mention} minimum withdrawal amount is 1<:points:819648258112225316> (you have {pp_points(user.balance)}<:points:819648258112225316>)"  # noqa: E501
-            )
-
-
-@commands.command()
-async def deposit(ctx):
-    await ensure_registered(ctx.author.id)
-    await ctx.send(
-        f"{ctx.author.mention}, to deposit <:points:819648258112225316> to your lottery wallet send command\n `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`"  # noqa: E501
-    )
 
 
 class WalletCog(commands.Cog):
@@ -79,9 +50,48 @@ class WalletCog(commands.Cog):
                 f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>.\nTo participate, `!lottery.buy [lottery name]`"  # noqa: E501
             )
 
+    @cog_ext.cog_subcommand(
+        base="lottery",
+        name="wallet",
+        guild_ids=config.GUILD_IDS,
+        description="View my lottery wallet",
+    )
+    async def my_wallet(self, ctx: SlashContext):
+        user = await ensure_registered(ctx.author.id)
+        await ctx.send(f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}<:points:819648258112225316>")
+
+    @cog_ext.cog_subcommand(
+        base="lottery",
+        name="withdraw",
+        guild_ids=config.GUILD_IDS,
+        description="Withdraw eco points from my lottery wallet",
+    )
+    async def withdraw(self, ctx: SlashContext):
+        await ensure_registered(ctx.author.id)
+        async with in_transaction():  # prevent race conditions via select_for_update + in_transaction
+            user = await User.filter(id=ctx.author.id).select_for_update().get(id=ctx.author.id)
+            old_balance = user.balance
+            if old_balance >= 1:
+                user.balance = 0
+                await user.save(update_fields=["balance", "modified_at"])
+                await ctx.send(f"!send <@!{ctx.author.id}> {int(old_balance)}")
+            else:
+                await ctx.send(
+                    f"{ctx.author.mention} minimum withdrawal amount is 1<:points:819648258112225316> (you have {pp_points(user.balance)}<:points:819648258112225316>)"  # noqa: E501
+                )
+
+    @cog_ext.cog_subcommand(
+        base="lottery",
+        name="deposit",
+        guild_ids=config.GUILD_IDS,
+        description="Deposit eco points to my lottery wallet",
+    )
+    async def deposit(self, ctx: SlashContext):
+        await ensure_registered(ctx.author.id)
+        await ctx.send(
+            f"{ctx.author.mention}, to deposit <:points:819648258112225316> to your lottery wallet send command\n `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`"  # noqa: E501
+        )
+
 
 def setup(bot):
-    bot.add_command(my_wallet)
-    bot.add_command(withdraw)
-    bot.add_command(deposit)
     bot.add_cog(WalletCog(bot))
