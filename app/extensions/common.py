@@ -1,4 +1,4 @@
-from discord import Embed, Activity, ActivityType
+from discord import Embed
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 
@@ -11,14 +11,6 @@ from app.constants import GREEN
 class CommonCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.bot.change_presence(activity=Activity(type=ActivityType.playing, name="ECO lottery"))
-        info = await self.bot.application_info()
-        print(
-            f"Add via link: https://discord.com/api/oauth2/authorize?client_id={info.id}&permissions=2147829824&scope=bot%20applications.commands"  # noqa: E501
-        )
 
     @cog_ext.cog_subcommand(base="lottery", name="help", guild_ids=config.GUILD_IDS, description="List all commands")
     async def help(self, ctx: SlashContext):
