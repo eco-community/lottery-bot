@@ -98,7 +98,11 @@ class LotteryCog(commands.Cog):
             # get old winning pool
             old_winning_pool = await get_old_winning_pool()
             total_winning_pool = old_winning_pool + lottery_pool
-            widget.add_field(name="Expected reward to win:", value=f"{pp_points(total_winning_pool)}", inline=False)
+            widget.add_field(
+                name="Expected reward to win:",
+                value=f"{pp_points(total_winning_pool)}<:points:819648258112225316>",
+                inline=False,
+            )
         widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
         widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
         widget.add_field(
