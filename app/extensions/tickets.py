@@ -27,7 +27,7 @@ class TicketCog(commands.Cog):
             # select user 2nd time to lock it's row
             user = await User.filter(id=ctx.author.id).select_for_update().get(id=ctx.author.id)
             # validate that lottery exists
-            lottery = await Lottery.get_or_none(name=lottery_name)
+            lottery = await Lottery.get_or_none(name__iexact=lottery_name)
             if not lottery:
                 return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
             # validate that we allow selling tickets
@@ -79,7 +79,7 @@ class TicketCog(commands.Cog):
 
     @cog_ext.cog_subcommand(base="lottery", name="tickets", guild_ids=config.GUILD_IDS, description="My tickets")
     async def my_tickets(self, ctx: SlashContext, lottery_name: str):
-        lottery = await Lottery.get_or_none(name=lottery_name)
+        lottery = await Lottery.get_or_none(name__iexact=lottery_name)
         if not lottery:
             return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
         tickets = await Ticket.filter(Q(lottery__id=lottery.id) & Q(user__id=ctx.author.id))

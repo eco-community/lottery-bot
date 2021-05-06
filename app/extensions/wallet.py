@@ -47,7 +47,7 @@ class WalletCog(commands.Cog):
             points = Decimal(str_points)
             await User.filter(id=message.author.id).update(balance=F("balance") + points)  # prevent race conditions
             await message.channel.send(
-                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>.\nTo participate, `!lottery.buy [lottery name]`"  # noqa: E501
+                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>.\nTo participate, `/lottery buy [lottery name]`"  # noqa: E501
             )
 
     @cog_ext.cog_subcommand(

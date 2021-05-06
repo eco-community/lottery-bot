@@ -14,7 +14,7 @@ import config
 from constants import ROLES_CAN_CONTROL_BOT
 from app.models import Lottery, User
 from app.exceptions import BlockAlreadyMinedException
-from app.utils import get_eta_to_block, select_winning_tickets, get_hash_for_block, pp_points
+from app.utils import get_eta_to_block, select_winning_tickets, get_hash_for_block, pp_points, get_old_winning_pool
 from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS, GREEN, GOLD
 
 
@@ -76,13 +76,13 @@ class LotteryCog(commands.Cog):
     )
     async def view_lottery(self, ctx: SlashContext, lottery_name: str):
         lottery = (
-            await Lottery.filter(name=lottery_name)
+            await Lottery.filter(name__iexact=lottery_name)
             .prefetch_related("tickets")
             .annotate(total_tickets=Count("tickets"))
-            .get_or_none(name=lottery_name)
         )
         if not lottery:
             return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
+        lottery = lottery[0]
         widget = Embed(description=f"{lottery.name} information", color=GREEN, title=f"{lottery.name}")
         widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
         widget.add_field(name="Ticket price:", value=f"{int(lottery.ticket_price)}", inline=False)
@@ -92,6 +92,13 @@ class LotteryCog(commands.Cog):
             inline=False,
         )  # noqa: E501
         widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
+        if lottery.status in [LotteryStatus.STARTED, LotteryStatus.STOP_SALES]:
+            # get winning pool for the current lottery
+            lottery_pool = lottery.total_tickets * lottery.ticket_price
+            # get old winning pool
+            old_winning_pool = await get_old_winning_pool()
+            total_winning_pool = old_winning_pool + lottery_pool
+            widget.add_field(name="Expected reward to win:", value=f"{pp_points(total_winning_pool)}", inline=False)
         widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
         widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
         widget.add_field(
@@ -201,7 +208,11 @@ class LotteryCog(commands.Cog):
         We will check if users have tickets with winning numbers, if they don't lottery points will
         be added to the total winning pool for the next lottery
         """
-        striked_lotteries = await Lottery.filter(status=LotteryStatus.STRIKED).prefetch_related("tickets")
+        striked_lotteries = (
+            await Lottery.filter(status=LotteryStatus.STRIKED)
+            .prefetch_related("tickets")
+            .annotate(total_tickets=Count("tickets"))
+        )
         notification_channel = self.bot.get_channel(config.LOTTERY_CHANNEL_ID)
         bulk_save_has_winners = []
         bulk_save_no_winners = []
@@ -216,16 +227,9 @@ class LotteryCog(commands.Cog):
             if winners_ids:
                 bulk_save_has_winners.append(lottery.id)
                 # get winning pool for the current lottery
-                lottery_pool = len(lottery.tickets) * lottery.ticket_price
-                # get winning pool for past lotteries without winners (aka with 'ended' status and has_winners="False")
-                qs = (
-                    await Lottery.filter(Q(status=LotteryStatus.ENDED) & Q(has_winners=False))
-                    .prefetch_related("tickets")
-                    .annotate(total_tickets=Count("tickets"))
-                )
-                # TODO: waiting for response to rewrite this into orm
-                # https://github.com/tortoise/tortoise-orm/issues/683
-                old_winning_pool = sum([_.total_tickets * _.ticket_price for _ in qs])
+                lottery_pool = lottery.total_tickets * lottery.ticket_price
+                # get old winning pool
+                old_winning_pool = await get_old_winning_pool()
                 total_winning_pool = old_winning_pool + lottery_pool
                 # share winning pool equally between winners
                 winner_share = total_winning_pool / len(winners_ids)

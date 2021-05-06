@@ -5,10 +5,13 @@ from datetime import datetime, timedelta, timezone
 
 import aiohttp
 import sentry_sdk
+from tortoise.functions import Count
+from tortoise.query_utils import Q
 from discord.ext import commands
 
 import config
-from app.models import User
+from app.models import User, Lottery
+from app.constants import LotteryStatus
 from app.exceptions import BlockAlreadyMinedException
 
 
@@ -92,6 +95,18 @@ async def get_hash_for_block(block: int) -> str:
         ) as response:
             block_info = await response.json()
             return block_info["result"]["hash"]
+
+
+async def get_old_winning_pool() -> int:
+    """Return winning pool for past lotteries without winners (aka with 'ended' status and has_winners="False")"""
+    qs = (
+        await Lottery.filter(Q(status=LotteryStatus.ENDED) & Q(has_winners=False))
+        .prefetch_related("tickets")
+        .annotate(total_tickets=Count("tickets"))
+    )
+    # TODO: waiting for response to rewrite this into orm
+    # https://github.com/tortoise/tortoise-orm/issues/683
+    return sum([_.total_tickets * _.ticket_price for _ in qs])
 
 
 def select_winning_tickets(

@@ -1,5 +1,3 @@
-from functools import cached_property
-
 from tortoise import fields
 from tortoise.models import Model
 
@@ -51,7 +49,7 @@ class Lottery(Model):
     def __str__(self):
         return self.name
 
-    @cached_property
+    @property
     def possible_tickets_count(self):
         return len([_ for _ in range(self.ticket_min_number, self.ticket_max_number + 1)])
 
