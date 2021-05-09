@@ -8,6 +8,7 @@ import sentry_sdk
 from tortoise.functions import Count
 from tortoise.query_utils import Q
 from discord.ext import commands
+from discord_slash.utils.manage_commands import create_option, create_choice
 
 import config
 from app.models import User, Lottery
@@ -107,6 +108,87 @@ async def get_old_winning_pool() -> int:
     # TODO: waiting for response to rewrite this into orm
     # https://github.com/tortoise/tortoise-orm/issues/683
     return sum([_.total_tickets * _.ticket_price for _ in qs])
+
+
+async def register_view_lottery_command(bot, cmd) -> None:
+    """Dirty hack to register options on fly for view_lottery command"""
+    lotteries = await Lottery.all().order_by("-created_at").limit(10)
+    try:
+        # force sync_commands to detect new changes and sync slash commands with Discord
+        del bot.slash.subcommands["lottery"]["view"]
+    except KeyError:
+        pass
+    bot.slash.add_subcommand(
+        cmd=cmd,
+        base="lottery",
+        name="view",
+        description="Display lottery information",
+        guild_ids=config.GUILD_IDS,
+        options=[
+            create_option(
+                name="name",
+                description="choose lottery",
+                option_type=3,
+                required=True,
+                choices=[create_choice(name=_.name, value=_.name) for _ in lotteries],
+            )
+        ],
+    )
+    return None
+
+
+async def register_buy_ticket_command(bot, cmd) -> None:
+    """Dirty hack to register options on fly for buy_ticket command"""
+    lotteries = await Lottery.filter(status=LotteryStatus.STARTED).order_by("-created_at").limit(10)
+    try:
+        # force sync_commands to detect new changes and sync slash commands with Discord
+        del bot.slash.subcommands["lottery"]["buy"]
+    except KeyError:
+        pass
+    bot.slash.add_subcommand(
+        cmd=cmd,
+        base="lottery",
+        name="buy",
+        description="Buy ticket",
+        guild_ids=config.GUILD_IDS,
+        options=[
+            create_option(
+                name="name",
+                description="choose lottery",
+                option_type=3,
+                required=True,
+                choices=[create_choice(name=_.name, value=_.name) for _ in lotteries],
+            )
+        ],
+    )
+    return None
+
+
+async def register_my_tickets_command(bot, cmd) -> None:
+    """Dirty hack to register options on fly for my_tickets command"""
+    lotteries = await Lottery.all().order_by("-created_at").limit(10)
+    try:
+        # force sync_commands to detect new changes and sync slash commands with Discord
+        del bot.slash.subcommands["lottery"]["tickets"]
+    except KeyError:
+        pass
+    bot.slash.add_subcommand(
+        cmd=cmd,
+        base="lottery",
+        name="tickets",
+        description="My tickets",
+        guild_ids=config.GUILD_IDS,
+        options=[
+            create_option(
+                name="name",
+                description="choose lottery",
+                option_type=3,
+                required=True,
+                choices=[create_choice(name=_.name, value=_.name) for _ in lotteries],
+            )
+        ],
+    )
+    return None
 
 
 def select_winning_tickets(

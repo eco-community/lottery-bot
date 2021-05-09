@@ -14,7 +14,16 @@ import config
 from constants import ROLES_CAN_CONTROL_BOT
 from app.models import Lottery, User
 from app.exceptions import BlockAlreadyMinedException
-from app.utils import get_eta_to_block, select_winning_tickets, get_hash_for_block, pp_points, get_old_winning_pool
+from app.utils import (
+    get_eta_to_block,
+    select_winning_tickets,
+    get_hash_for_block,
+    pp_points,
+    get_old_winning_pool,
+    register_view_lottery_command,
+    register_buy_ticket_command,
+    register_my_tickets_command,
+)
 from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS, GREEN, GOLD
 
 
@@ -53,6 +62,12 @@ async def new_lottery(
         f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"  # noqa: E501
     )
 
+    # dirty hack to fake dynamic loading of choices in slash commands
+    await register_view_lottery_command(ctx.bot, ctx.bot.cogs["LotteryCog"].view_lottery)
+    await register_buy_ticket_command(ctx.bot, ctx.bot.cogs["TicketCog"].buy_ticket)
+    await register_my_tickets_command(ctx.bot, ctx.bot.cogs["TicketCog"].my_tickets)
+    ctx.bot.reload_extension("app.extensions.lottery")
+
 
 @new_lottery.error
 async def new_lottery_error(ctx, error):
@@ -67,22 +82,12 @@ class LotteryCog(commands.Cog):
         self.bot = bot
         self.lock = asyncio.Lock()
         self.lottery_status_cron_job.start()
+        self.bot.loop.create_task(register_view_lottery_command(self.bot, self.view_lottery))
 
-    @cog_ext.cog_subcommand(
-        base="lottery",
-        name="view",
-        guild_ids=config.GUILD_IDS,
-        description="Display lottery information",
-    )
-    async def view_lottery(self, ctx: SlashContext, lottery_name: str):
+    async def view_lottery(self, ctx: SlashContext, name: str):
         lottery = (
-            await Lottery.filter(name__iexact=lottery_name)
-            .prefetch_related("tickets")
-            .annotate(total_tickets=Count("tickets"))
+            await Lottery.all().prefetch_related("tickets").annotate(total_tickets=Count("tickets")).get(name=name)
         )
-        if not lottery:
-            return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
-        lottery = lottery[0]
         widget = Embed(description=f"{lottery.name} information", color=GREEN, title=f"{lottery.name}")
         widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
         widget.add_field(name="Ticket price:", value=f"{int(lottery.ticket_price)}", inline=False)

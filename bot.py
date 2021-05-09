@@ -1,3 +1,4 @@
+import sys
 import logging
 
 from discord import Intents, Activity, ActivityType
@@ -28,14 +29,17 @@ if __name__ == "__main__":
     )
 
     # setup logger
+    file_handler = logging.FileHandler(filename="eco-lottery.log")
+    stdout_handler = logging.StreamHandler(sys.stdout)
+
     logging.basicConfig(
-        filename="eco-lottery.log",
         level=logging.getLevelName(config.LOG_LEVEL),
         format="%(asctime)s %(levelname)s:%(message)s",
+        handlers=[file_handler if config.LOG_TO_FILE else stdout_handler],
     )
+    bot.loop.run_until_complete(Tortoise.init(config=TORTOISE_ORM))
     bot.load_extension("app.extensions.lottery")
     bot.load_extension("app.extensions.tickets")
     bot.load_extension("app.extensions.wallet")
     bot.load_extension("app.extensions.common")
-    bot.loop.run_until_complete(Tortoise.init(config=TORTOISE_ORM))
     bot.run(config.TOKEN)

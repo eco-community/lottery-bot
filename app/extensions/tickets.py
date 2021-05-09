@@ -4,11 +4,10 @@ from discord import Embed
 from discord.ext import commands
 from tortoise.query_utils import Q
 from tortoise.transactions import in_transaction
-from discord_slash import cog_ext, SlashContext
+from discord_slash import SlashContext
 
-import config
 from app.models import Lottery, Ticket, User
-from app.utils import ensure_registered, pp_points
+from app.utils import ensure_registered, pp_points, register_buy_ticket_command, register_my_tickets_command
 from app.constants import LotteryStatus, GREEN
 
 
@@ -18,31 +17,17 @@ cryptogen = SystemRandom()
 class TicketCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot.loop.create_task(register_buy_ticket_command(self.bot, self.buy_ticket))
+        self.bot.loop.create_task(register_my_tickets_command(self.bot, self.my_tickets))
 
-    @cog_ext.cog_subcommand(base="lottery", name="buy", guild_ids=config.GUILD_IDS, description="Buy ticket")
-    async def buy_ticket(self, ctx: SlashContext, lottery_name: str):
+    async def buy_ticket(self, ctx: SlashContext, name: str):
         # ticket buying logic
         await ensure_registered(ctx.author.id)
         async with in_transaction():  # prevent race conditions via select_for_update + in_transaction
             # select user 2nd time to lock it's row
             user = await User.filter(id=ctx.author.id).select_for_update().get(id=ctx.author.id)
             # validate that lottery exists
-            lottery = await Lottery.get_or_none(name__iexact=lottery_name)
-            if not lottery:
-                return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
-            # validate that we allow selling tickets
-            if lottery.status == LotteryStatus.STOP_SALES:
-                return await ctx.send(
-                    f"{ctx.author.mention}, tickets can't be bought for `{lottery_name}` because there are no tickets left or it's close to strike date"  # noqa: E501
-                )
-            elif lottery.status == LotteryStatus.STRIKED:
-                return await ctx.send(
-                    f"{ctx.author.mention}, tickets can't be bought for `{lottery_name}` because winning tickets were already selected"  # noqa: E501
-                )
-            elif lottery.status == LotteryStatus.ENDED:
-                return await ctx.send(
-                    f"{ctx.author.mention}, tickets can't be bought for `{lottery_name}` because it has ended"
-                )
+            lottery = await Lottery.get_or_none(name=name)
             # validate user balance
             if user.balance < lottery.ticket_price:
                 return await ctx.send(
@@ -77,16 +62,13 @@ class TicketCog(commands.Cog):
                 await lottery.save(update_fields=["status", "modified_at"])
                 await ctx.send(f"{ctx.author.mention}, ouch, the last ticket was sold a moment ago")
 
-    @cog_ext.cog_subcommand(base="lottery", name="tickets", guild_ids=config.GUILD_IDS, description="My tickets")
-    async def my_tickets(self, ctx: SlashContext, lottery_name: str):
-        lottery = await Lottery.get_or_none(name__iexact=lottery_name)
-        if not lottery:
-            return await ctx.send(f"{ctx.author.mention}, error, lottery `{lottery_name}` doesn't exist")
+    async def my_tickets(self, ctx: SlashContext, name: str):
+        lottery = await Lottery.get(name=name)
         tickets = await Ticket.filter(Q(lottery__id=lottery.id) & Q(user__id=ctx.author.id))
         widget = Embed(
-            description=f"You have `{len(tickets)}` tickets for `{lottery_name}`",
+            description=f"You have `{len(tickets)}` tickets for `{name}`",
             color=GREEN,
-            title=f"{lottery_name} tickets",
+            title=f"{name} tickets",
         )
         widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
         if len(tickets):
