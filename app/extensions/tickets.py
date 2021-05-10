@@ -28,6 +28,19 @@ class TicketCog(commands.Cog):
             user = await User.filter(id=ctx.author.id).select_for_update().get(id=ctx.author.id)
             # validate that lottery exists
             lottery = await Lottery.get_or_none(name=name)
+            # validate that we allow selling tickets
+            if lottery.status == LotteryStatus.STOP_SALES:
+                return await ctx.send(
+                    f"{ctx.author.mention}, tickets can't be bought for `{name}` because there are no tickets left or it's close to strike date"  # noqa: E501
+                )
+            elif lottery.status == LotteryStatus.STRIKED:
+                return await ctx.send(
+                    f"{ctx.author.mention}, tickets can't be bought for `{name}` because winning tickets were already selected"  # noqa: E501
+                )
+            elif lottery.status == LotteryStatus.ENDED:
+                return await ctx.send(
+                    f"{ctx.author.mention}, tickets can't be bought for `{name}` because it has ended"
+                )
             # validate user balance
             if user.balance < lottery.ticket_price:
                 return await ctx.send(

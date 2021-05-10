@@ -191,6 +191,14 @@ async def register_my_tickets_command(bot, cmd) -> None:
     return None
 
 
+async def reload_options_hack(bot) -> None:
+    """dirty hack to fake dynamic loading of choices in slash commands"""
+    await register_view_lottery_command(bot, bot.cogs["LotteryCog"].view_lottery)
+    await register_buy_ticket_command(bot, bot.cogs["TicketCog"].buy_ticket)
+    await register_my_tickets_command(bot, bot.cogs["TicketCog"].my_tickets)
+    bot.reload_extension("app.extensions.lottery")
+
+
 def select_winning_tickets(
     hash: str,
     min_number: int,

@@ -21,8 +21,7 @@ from app.utils import (
     pp_points,
     get_old_winning_pool,
     register_view_lottery_command,
-    register_buy_ticket_command,
-    register_my_tickets_command,
+    reload_options_hack,
 )
 from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS, GREEN, GOLD
 
@@ -61,12 +60,7 @@ async def new_lottery(
     await ctx.send(
         f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"  # noqa: E501
     )
-
-    # dirty hack to fake dynamic loading of choices in slash commands
-    await register_view_lottery_command(ctx.bot, ctx.bot.cogs["LotteryCog"].view_lottery)
-    await register_buy_ticket_command(ctx.bot, ctx.bot.cogs["TicketCog"].buy_ticket)
-    await register_my_tickets_command(ctx.bot, ctx.bot.cogs["TicketCog"].my_tickets)
-    ctx.bot.reload_extension("app.extensions.lottery")
+    await reload_options_hack(ctx.bot)
 
 
 @new_lottery.error
@@ -83,6 +77,9 @@ class LotteryCog(commands.Cog):
         self.lock = asyncio.Lock()
         self.lottery_status_cron_job.start()
         self.bot.loop.create_task(register_view_lottery_command(self.bot, self.view_lottery))
+
+    def cog_unload(self):
+        self.lottery_status_cron_job.cancel()
 
     async def view_lottery(self, ctx: SlashContext, name: str):
         lottery = (
@@ -191,7 +188,7 @@ class LotteryCog(commands.Cog):
                 logging.debug(f":::lottery_cron: Selected winning tickets for: {lottery.id}")
         return None
 
-    async def _handle_payments_to_winners(self) -> None:
+    async def _handle_payments_to_winners(self) -> bool:
         """Handle payments for winning tickets
 
         We will check if users have tickets with winning numbers, if they don't lottery points will
@@ -254,11 +251,14 @@ class LotteryCog(commands.Cog):
                 # send notification to the channel
                 await notification_channel.send(embed=widget)
         # bulk change lotteries to LotteryStatus.ENDED
+        should_reload_options = False
         if bulk_save_has_winners:
             await Lottery.filter(id__in=bulk_save_has_winners).update(status=LotteryStatus.ENDED, has_winners=True)
+            should_reload_options = True
         if bulk_save_no_winners:
             await Lottery.filter(id__in=bulk_save_no_winners).update(status=LotteryStatus.ENDED)
-        return None
+            should_reload_options = True
+        return should_reload_options
 
     @tasks.loop(seconds=config.CHECK_LOTTERY_STATUS_SECONDS)
     async def lottery_status_cron_job(self):
@@ -266,10 +266,13 @@ class LotteryCog(commands.Cog):
         if not self.lock.locked():
             await self.lock.acquire()
             try:
+                should_reload_options = False
                 async with in_transaction():
                     await self._handle_stopping_sales()
                     await self._handle_selecting_winning_tickets()
-                    await self._handle_payments_to_winners()
+                    should_reload_options = await self._handle_payments_to_winners()
+                if should_reload_options:
+                    await reload_options_hack(self.bot)
             finally:
                 self.lock.release()
 
