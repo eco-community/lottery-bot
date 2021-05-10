@@ -127,26 +127,6 @@ class LotteryCog(commands.Cog):
 
     @cog_ext.cog_subcommand(
         base="lottery",
-        name="list",
-        guild_ids=config.GUILD_IDS,
-        description="Display active lotteries",
-    )
-    async def lotteries(self, ctx: SlashContext):
-        lotteries_list = await Lottery.exclude(status=LotteryStatus.ENDED)
-        if not lotteries_list:
-            return await ctx.send(f"{ctx.author.mention}, we don't have any active lotteries")
-        widget = Embed(description="List of all lotteries", color=GREEN, title="All lotteries")
-        widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
-        for lottery in lotteries_list:
-            widget.add_field(
-                name=lottery.name,
-                value=f"Ticket price {pp_points(lottery.ticket_price)}<:points:819648258112225316>",
-                inline=False,
-            )
-        await ctx.send(content=ctx.author.mention, embed=widget)
-
-    @cog_ext.cog_subcommand(
-        base="lottery",
         name="history",
         guild_ids=config.GUILD_IDS,
         description="Display results for previous lotteries",
