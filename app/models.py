@@ -31,6 +31,7 @@ class Lottery(Model):
     strike_date_eta = fields.data.DatetimeField()
     strike_eth_block = fields.IntField()
     winning_tickets = fields.JSONField(null=True)
+    number_of_winning_tickets = fields.IntField(default=1)
     # there is a possibility when lottery doesn't have winners, in this case we will add lottery pool to the total pool
     # then if someone wins another lottery he will get total pool
     has_winners = fields.BooleanField(default=False)

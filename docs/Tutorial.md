@@ -6,11 +6,10 @@
 
 ### How to create a lottery
 
-To create lottery we will use `!lottery.new` command with such syntax  
-`!lottery.new "[lottery name]" [ethereum block] [ticket price](optional) [ticket min number](optional) [ticket max number](optional)`
+To create lottery we will use `/new_lottery` command  
 
 For example to create `Test Lottery` which will strike at `12156191` ethereum block with the ticket price of `10` eco points with tickets ranging from `0` to `10000` we will use  
-`!lottery.new "Test Lottery" 12156191 10 0 10000`
+`/new_lottery Test Lottery 12156191 10 0 10000`
 
 Setting ticket range allows us to control the probability of winning the lottery.
 If nobody won the lottery, lottery winning pool will be kept for the next lotteries

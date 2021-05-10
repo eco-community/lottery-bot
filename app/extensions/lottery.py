@@ -2,6 +2,7 @@ import logging
 import asyncio
 
 from discord import Embed
+from discord.utils import find
 from discord.ext import commands, tasks
 from tortoise.expressions import F
 from tortoise.query_utils import Q
@@ -9,6 +10,8 @@ from tortoise.functions import Count
 from tortoise import exceptions, timezone
 from tortoise.transactions import in_transaction
 from discord_slash import cog_ext, SlashContext
+from discord_slash.utils.manage_commands import create_option
+from discord_slash.model import SlashCommandOptionType
 
 import config
 from constants import ROLES_CAN_CONTROL_BOT
@@ -26,51 +29,6 @@ from app.utils import (
 from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS, GREEN, GOLD
 
 
-@commands.has_any_role(*ROLES_CAN_CONTROL_BOT)
-@commands.command(aliases=["new", "create"])
-async def new_lottery(
-    ctx,
-    name: str,
-    strike_eth_block: int,
-    ticket_price: int = None,
-    ticket_min_number: int = None,
-    ticket_max_number: int = None,
-):
-    # parse args
-    lottery = Lottery(name=name, strike_eth_block=strike_eth_block)
-    if ticket_price is not None:
-        lottery.ticket_price = ticket_price
-    if ticket_min_number is not None:
-        lottery.ticket_min_number = ticket_min_number
-    if ticket_max_number is not None:
-        lottery.ticket_max_number = ticket_max_number
-    # get eta to block
-    try:
-        lottery.strike_date_eta = await get_eta_to_block(strike_eth_block)
-    except BlockAlreadyMinedException:
-        # block has already passed
-        return await ctx.send(
-            f"{ctx.author.mention}, error, block `{strike_eth_block}` already passed, choose a different block"
-        )
-    # save lottery
-    try:
-        await lottery.save()
-    except exceptions.IntegrityError:
-        return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` already exists, choose a different name")
-    await ctx.send(
-        f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"  # noqa: E501
-    )
-    await reload_options_hack(ctx.bot)
-
-
-@new_lottery.error
-async def new_lottery_error(ctx, error):
-    if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument)):
-        await ctx.send(
-            f'{ctx.author.mention}, wrong syntax, ```!lottery.new "[lottery name]" [ethereum block] [ticket price](optional) [ticket min number](optional) [ticket max number](optional)```'  # noqa: E501
-        )
-
-
 class LotteryCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -81,19 +39,111 @@ class LotteryCog(commands.Cog):
     def cog_unload(self):
         self.lottery_status_cron_job.cancel()
 
+    @cog_ext.cog_slash(
+        name="new_lottery",
+        guild_ids=config.GUILD_IDS,
+        description="Create a new lottery",
+        options=[
+            create_option(
+                name="name",
+                description="Lottery name",
+                option_type=SlashCommandOptionType.STRING,
+                required=True,
+            ),
+            create_option(
+                name="eth_block",
+                description="Lottery strike block",
+                option_type=SlashCommandOptionType.INTEGER,
+                required=True,
+            ),
+            create_option(
+                name="price",
+                description="Ticket price",
+                option_type=SlashCommandOptionType.INTEGER,
+                required=False,
+            ),
+            create_option(
+                name="min_num",
+                description="Ticket min number",
+                option_type=SlashCommandOptionType.INTEGER,
+                required=False,
+            ),
+            create_option(
+                name="max_num",
+                description="Ticket max number",
+                option_type=SlashCommandOptionType.INTEGER,
+                required=False,
+            ),
+            create_option(
+                name="number_of_winning_tickets",
+                description="Number of winning tickets",
+                option_type=SlashCommandOptionType.INTEGER,
+                required=False,
+            ),
+        ],
+    )
+    async def new_lottery(
+        self,
+        ctx: SlashContext,
+        name: str,
+        eth_block: int,
+        price: int = None,
+        min_num: int = None,
+        max_num: int = None,
+        number_of_winning_tickets: int = None,
+    ):
+        can_control_bot = find(lambda _: _.name in ROLES_CAN_CONTROL_BOT, ctx.author.roles)
+        if not can_control_bot:
+            return await ctx.send(f"{ctx.author.mention}, I’m sorry but I can’t do that for you.")
+        # parse args
+        lottery = Lottery(name=name, strike_eth_block=eth_block)
+        if price is not None:
+            lottery.ticket_price = price
+        if min_num is not None:
+            lottery.ticket_min_number = min_num
+        if max_num is not None:
+            lottery.ticket_max_number = max_num
+        if number_of_winning_tickets is not None:
+            lottery.number_of_winning_tickets = number_of_winning_tickets
+        # get eta to block
+        try:
+            lottery.strike_date_eta = await get_eta_to_block(eth_block)
+        except BlockAlreadyMinedException:
+            # block has already passed
+            return await ctx.send(
+                f"{ctx.author.mention}, error, block `{eth_block}` already passed, choose a different block"
+            )
+        # save lottery
+        try:
+            await lottery.save()
+        except exceptions.IntegrityError:
+            return await ctx.send(
+                f"{ctx.author.mention}, error, lottery `{name}` already exists, choose a different name"
+            )
+        await ctx.send(
+            f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"  # noqa: E501
+        )
+        await reload_options_hack(ctx.bot)
+
     async def view_lottery(self, ctx: SlashContext, name: str):
         lottery = (
             await Lottery.all().prefetch_related("tickets").annotate(total_tickets=Count("tickets")).get(name=name)
         )
         widget = Embed(description=f"{lottery.name} information", color=GREEN, title=f"{lottery.name}")
         widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
-        widget.add_field(name="Ticket price:", value=f"{int(lottery.ticket_price)}", inline=False)
         widget.add_field(
-            name="Strike ETH block:",
-            value=f"[{lottery.strike_eth_block}](<https://etherscan.io/block/{lottery.strike_eth_block}>)",
+            name="Ticket price:",
+            value=f"{pp_points(lottery.ticket_price)}<:points:819648258112225316>",
             inline=False,
-        )  # noqa: E501
-        widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
+        )
+        widget.add_field(
+            name="Strike Date (estimated):",
+            value=f"[{lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC](<https://etherscan.io/block/countdown/{lottery.strike_eth_block}>)",  # noqa: E501
+            inline=False,
+        )
+        widget.add_field(
+            name="Tickets left:", value=f"{lottery.possible_tickets_count - lottery.total_tickets}", inline=False
+        )
         if lottery.status in [LotteryStatus.STARTED, LotteryStatus.STOP_SALES]:
             # get winning pool for the current lottery
             lottery_pool = lottery.total_tickets * lottery.ticket_price
@@ -105,21 +155,22 @@ class LotteryCog(commands.Cog):
                 value=f"{pp_points(total_winning_pool)}<:points:819648258112225316>",
                 inline=False,
             )
+        widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
         widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
         widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
-        widget.add_field(
-            name="Tickets left:", value=f"{lottery.possible_tickets_count - lottery.total_tickets}", inline=False
-        )
         widget.add_field(
             name="Winning tickets:",
             value=f"{', '.join(map(str, lottery.winning_tickets)) if lottery.winning_tickets else '-'}",
             inline=False,
         )
         widget.add_field(
-            name="Strike Date (estimated):",
-            value=f"[{lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC](<https://etherscan.io/block/countdown/{lottery.strike_eth_block}>)",  # noqa: E501
-            inline=False,
+            name="How many ticket numbers will be drawn:", value=lottery.number_of_winning_tickets, inline=False
         )
+        widget.add_field(
+            name="Strike ETH block:",
+            value=f"[{lottery.strike_eth_block}](<https://etherscan.io/block/{lottery.strike_eth_block}>)",
+            inline=False,
+        )  # noqa: E501
         await ctx.send(content=ctx.author.mention, embed=widget)
 
     @cog_ext.cog_subcommand(
@@ -182,6 +233,7 @@ class LotteryCog(commands.Cog):
                     hash=block_hash,
                     min_number=lottery.ticket_min_number,
                     max_number=lottery.ticket_max_number,
+                    number_of_winning_tickets=lottery.number_of_winning_tickets,
                 )
                 lottery.status = LotteryStatus.STRIKED
                 await lottery.save(update_fields=["winning_tickets", "status", "modified_at"])
@@ -219,7 +271,7 @@ class LotteryCog(commands.Cog):
                 total_winning_pool = old_winning_pool + lottery_pool
                 # share winning pool equally between winners
                 winner_share = total_winning_pool / len(winners_ids)
-                await User.filter(id__in=winners_ids).update(balance=F("balance") + winner_share)
+                await User.filter(id__in=winners_ids).update(balance=F("balance") + int(winner_share))
                 # remove old winning pool (because it was paid to the winners)
                 if old_winning_pool:
                     await Lottery.filter(Q(status=LotteryStatus.ENDED) & Q(has_winners=False)).update(has_winners=True)
@@ -282,5 +334,4 @@ class LotteryCog(commands.Cog):
 
 
 def setup(bot):
-    bot.add_command(new_lottery)
     bot.add_cog(LotteryCog(bot))
