@@ -135,7 +135,7 @@ class LotteryCog(commands.Cog):
         if not lottery:
             return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` doesn't exist")
         widget = Embed(
-            description=":game_die::game_die::game_die:Lottery information:game_die::game_die::game_die:",
+            description=":game_die:Lottery information:game_die:",
             color=GREEN,
             title=f"{lottery.name}",
         )
@@ -167,7 +167,7 @@ class LotteryCog(commands.Cog):
         widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
         widget.add_field(
             name="\a",
-            value=":rocket::rocket::rocket:Advanced:rocket::rocket::rocket:",
+            value=":rocket:Advanced:rocket:",
             inline=False,
         )
         widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
