@@ -127,9 +127,18 @@ class LotteryCog(commands.Cog):
 
     async def view_lottery(self, ctx: SlashContext, name: str):
         lottery = (
-            await Lottery.all().prefetch_related("tickets").annotate(total_tickets=Count("tickets")).get(name=name)
+            await Lottery.all()
+            .prefetch_related("tickets")
+            .annotate(total_tickets=Count("tickets"))
+            .get_or_none(name=name)
         )
-        widget = Embed(description=f"{lottery.name} information", color=GREEN, title=f"{lottery.name}")
+        if not lottery:
+            return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` doesn't exist")
+        widget = Embed(
+            description=":game_die::game_die::game_die:Lottery information:game_die::game_die::game_die:",
+            color=GREEN,
+            title=f"{lottery.name}",
+        )
         widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
         widget.add_field(
             name="Ticket price:",
@@ -156,6 +165,11 @@ class LotteryCog(commands.Cog):
                 inline=False,
             )
         widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
+        widget.add_field(
+            name="\a",
+            value=":rocket::rocket::rocket:Advanced:rocket::rocket::rocket:",
+            inline=False,
+        )
         widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
         widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
         widget.add_field(
@@ -291,7 +305,9 @@ class LotteryCog(commands.Cog):
                 inline=False,
             )
             if winners_ids:
-                widget.add_field(name="Winners:", value=winners_mentions_str, inline=False)
+                widget.add_field(
+                    name=":trophy::trophy:Winners:trophy::trophy:", value=winners_mentions_str, inline=False
+                )
                 # send notification to the channel
                 await notification_channel.send(content=winners_mentions_str, embed=widget)
             else:

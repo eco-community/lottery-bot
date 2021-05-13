@@ -28,6 +28,8 @@ class TicketCog(commands.Cog):
             user = await User.filter(id=ctx.author.id).select_for_update().get(id=ctx.author.id)
             # validate that lottery exists
             lottery = await Lottery.get_or_none(name=name)
+            if not lottery:
+                return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` doesn't exist")
             # validate that we allow selling tickets
             if lottery.status == LotteryStatus.STOP_SALES:
                 return await ctx.send(
@@ -76,7 +78,9 @@ class TicketCog(commands.Cog):
                 await ctx.send(f"{ctx.author.mention}, ouch, the last ticket was sold a moment ago")
 
     async def my_tickets(self, ctx: SlashContext, name: str):
-        lottery = await Lottery.get(name=name)
+        lottery = await Lottery.get_or_none(name=name)
+        if not lottery:
+            return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` doesn't exist")
         tickets = await Ticket.filter(Q(lottery__id=lottery.id) & Q(user__id=ctx.author.id))
         widget = Embed(
             description=f"You have `{len(tickets)}` tickets for `{name}`",
