@@ -8,6 +8,7 @@ from tortoise.expressions import F
 from tortoise.query_utils import Q
 from tortoise.functions import Count
 from tortoise import exceptions, timezone
+from sentry_sdk import capture_exception, Hub
 from tortoise.transactions import in_transaction
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option
@@ -330,19 +331,23 @@ class LotteryCog(commands.Cog):
 
     @tasks.loop(seconds=config.CHECK_LOTTERY_STATUS_SECONDS)
     async def lottery_status_cron_job(self):
-        # ensure that only one instance of job is running, other instances will be discarded
-        if not self.lock.locked():
-            await self.lock.acquire()
-            try:
-                should_reload_options = False
-                async with in_transaction():
-                    await self._handle_stopping_sales()
-                    await self._handle_selecting_winning_tickets()
-                    should_reload_options = await self._handle_payments_to_winners()
-                if should_reload_options:
-                    await reload_options_hack(self.bot)
-            finally:
-                self.lock.release()
+        with Hub(Hub.current):
+            # ensure that only one instance of job is running, other instances will be discarded
+            if not self.lock.locked():
+                await self.lock.acquire()
+                try:
+                    should_reload_options = False
+                    async with in_transaction():
+                        await self._handle_stopping_sales()
+                        await self._handle_selecting_winning_tickets()
+                        should_reload_options = await self._handle_payments_to_winners()
+                    if should_reload_options:
+                        await reload_options_hack(self.bot)
+                except Exception as e:
+                    logging.debug(f":::lottery_cron: {e}")
+                    capture_exception(e)
+                finally:
+                    self.lock.release()
 
     @lottery_status_cron_job.before_loop
     async def before_check_lottery_status(self):
