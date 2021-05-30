@@ -69,7 +69,7 @@ class TicketCog(commands.Cog):
                 )
                 await user.refresh_from_db(fields=["balance"])
                 await ctx.send(
-                    f"{ctx.author.mention}, you bought ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
+                    f"{ctx.author.mention}, you bought {lottery.name} ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
                 )
             except IndexError:
                 # it means that all tickets were sold, stop ticket sales for lottery
