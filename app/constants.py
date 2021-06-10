@@ -8,7 +8,7 @@ class LotteryStatus(str, Enum):
     ENDED = "ended"  # lottery ended, winners were paid
 
 
-STOP_SALES_BEFORE_START_IN_SEC = 60 * 60 * 5  # in seconds
+STOP_SALES_BEFORE_START_IN_SEC = 60 * 60 * 2  # in seconds
 BLOCK_CONFIRMATIONS = 12  # number of block confirmations after which block will be considered as canonical
 
 GREEN = 0x03D692
