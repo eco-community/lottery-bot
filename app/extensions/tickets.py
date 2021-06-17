@@ -48,8 +48,6 @@ class TicketCog(commands.Cog):
                 return await ctx.send(
                     f"{ctx.author.mention}, not enough points, you only have `{pp_points(user.balance)}`<:points:819648258112225316> in your lottery wallet and ticket price is `{int(lottery.ticket_price)}`<:points:819648258112225316>. To add points to your lottery wallet, `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`"  # noqa: E501
                 )
-            user.balance = user.balance - lottery.ticket_price
-            await user.save(update_fields=["balance", "modified_at"])
             # to generate random ticket number that doesn't have collisions we will need to grab all ticket numbers
             # from database and then check in python which numbers are available
             ticket_numbers = await Ticket.filter(lottery=lottery).values_list("ticket_number", flat=True)
@@ -67,7 +65,8 @@ class TicketCog(commands.Cog):
                         ]
                     ),
                 )
-                await user.refresh_from_db(fields=["balance"])
+                user.balance = user.balance - lottery.ticket_price
+                await user.save(update_fields=["balance", "modified_at"])
                 await ctx.send(
                     f"{ctx.author.mention}, you bought {lottery.name} ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
                 )

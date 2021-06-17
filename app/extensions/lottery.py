@@ -272,21 +272,27 @@ class LotteryCog(commands.Cog):
         for lottery in striked_lotteries:
             # check if lottery has winning tickets
             winners_ids = set()
+            winning_tickets = []
             for ticket in lottery.tickets:
                 if ticket.ticket_number in lottery.winning_tickets:
                     winners_ids.add(ticket.user_id)
+                    winning_tickets.append(ticket)
                     logging.debug(f":::lottery_cron: Winner for lottery: {lottery.name} is: {ticket.user_id}")
             # process winners
-            if winners_ids:
+            if winning_tickets:
                 bulk_save_has_winners.append(lottery.id)
                 # get winning pool for the current lottery
                 lottery_pool = lottery.total_tickets * lottery.ticket_price
                 # get old winning pool
                 old_winning_pool = await get_old_winning_pool()
+                # import ipdb;ipdb.set_trace()
                 total_winning_pool = old_winning_pool + lottery_pool
-                # share winning pool equally between winners
-                winner_share = total_winning_pool / len(winners_ids)
-                await User.filter(id__in=winners_ids).update(balance=F("balance") + int(winner_share))
+                winning_ticket_share = total_winning_pool / len(winning_tickets)
+                # share winning pool between winners
+                for w_ticket in winning_tickets:
+                    await User.filter(id__in=[w_ticket.user_id]).update(
+                        balance=F("balance") + int(winning_ticket_share)
+                    )
                 # remove old winning pool (because it was paid to the winners)
                 if old_winning_pool:
                     await Lottery.filter(Q(status=LotteryStatus.ENDED) & Q(has_winners=False)).update(has_winners=True)
