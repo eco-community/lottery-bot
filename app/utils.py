@@ -223,3 +223,29 @@ def select_winning_tickets(
     vrf_random = random.Random(hash)
     # make range to behave as inclusive range, this way ticket with max_number could be won
     return vrf_random.sample(range(min_number, max_number + 1), number_of_winning_tickets)
+
+
+def select_winning_tickets_guaranteed(
+    hash: str,
+    ticket_numbers: list,
+    number_of_winning_tickets: int = 1,
+) -> List[int]:
+    """Function will act as VRF (https://en.wikipedia.org/wiki/Verifiable_random_function)
+
+    Args:
+        hash (str): block hash, will be used as seed for verifiable randomness
+        ticket_numbers (list): list of ticket numbers
+        number_of_winning_tickets (int): number of winning tickets
+
+    Example:
+        select_winning_tickets_guaranteed("hash", [1, 2, 99], 10) will select winning ticket from three tickets
+
+    Returns:
+        list of winning ticket numbers
+    """
+
+    vrf_random = random.Random(hash)
+    if len(ticket_numbers) >= number_of_winning_tickets:
+        return vrf_random.sample(ticket_numbers, number_of_winning_tickets)
+    else:
+        return ticket_numbers

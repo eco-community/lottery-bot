@@ -21,6 +21,7 @@ from app.exceptions import BlockAlreadyMinedException
 from app.utils import (
     get_eta_to_block,
     select_winning_tickets,
+    select_winning_tickets_guaranteed,
     get_hash_for_block,
     pp_points,
     get_old_winning_pool,
@@ -64,18 +65,6 @@ class LotteryCog(commands.Cog):
                 required=False,
             ),
             create_option(
-                name="min_num",
-                description="Ticket min number (default 10000)",
-                option_type=SlashCommandOptionType.INTEGER,
-                required=False,
-            ),
-            create_option(
-                name="max_num",
-                description="Ticket max number (default 99000)",
-                option_type=SlashCommandOptionType.INTEGER,
-                required=False,
-            ),
-            create_option(
                 name="number_of_winning_tickets",
                 description="Number of winning tickets (default 1)",
                 option_type=SlashCommandOptionType.INTEGER,
@@ -89,23 +78,21 @@ class LotteryCog(commands.Cog):
         name: str,
         eth_block: int,
         price: int = None,
-        min_num: int = None,
-        max_num: int = None,
         number_of_winning_tickets: int = None,
     ):
         can_control_bot = find(lambda _: _.name in ROLES_CAN_CONTROL_BOT, ctx.author.roles)
         if not can_control_bot:
             return await ctx.send(f"{ctx.author.mention}, I’m sorry but I can’t do that for you.")
         # parse args
-        lottery = Lottery(name=name, strike_eth_block=eth_block)
+        lottery = Lottery(name=name, strike_eth_block=eth_block, is_guaranteed=True)
         if price is not None:
             lottery.ticket_price = price
-        if min_num is not None:
-            lottery.ticket_min_number = min_num
-        if max_num is not None:
-            lottery.ticket_max_number = max_num
         if number_of_winning_tickets is not None:
             lottery.number_of_winning_tickets = number_of_winning_tickets
+        if lottery.number_of_winning_tickets < 1:
+            return await ctx.send(
+                f"{ctx.author.mention}, error, `number_of_winning_tickets` should be greater or equal than 1"
+            )  # noqa: E501
         # get eta to block
         try:
             lottery.strike_date_eta = await get_eta_to_block(eth_block)
@@ -171,8 +158,9 @@ class LotteryCog(commands.Cog):
             value=":rocket:Advanced:rocket:",
             inline=False,
         )
-        widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
-        widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
+        if not lottery.is_guaranteed:
+            widget.add_field(name="Min ticket number:", value=f"{lottery.ticket_min_number}", inline=False)
+            widget.add_field(name="Max ticket number:", value=f"{lottery.ticket_max_number}", inline=False)
         widget.add_field(
             name="Winning tickets:",
             value=f"{', '.join(map(str, lottery.winning_tickets)) if lottery.winning_tickets else '-'}",
@@ -235,7 +223,7 @@ class LotteryCog(commands.Cog):
 
         Note: we will also ensure that lottery.strike_eth_block has required number of confirmations (aka block depth)
         """
-        stop_sales_lotteries = await Lottery.filter(status=LotteryStatus.STOP_SALES)
+        stop_sales_lotteries = await Lottery.filter(status=LotteryStatus.STOP_SALES).prefetch_related("tickets")
         for lottery in stop_sales_lotteries:
             # check if block was mined with required number of confirmations
             try:
@@ -244,11 +232,19 @@ class LotteryCog(commands.Cog):
             except BlockAlreadyMinedException:
                 # block has been mined, we could select winning ticket numbers
                 block_hash = await get_hash_for_block(lottery.strike_eth_block)
-                lottery.winning_tickets = select_winning_tickets(
-                    hash=block_hash,
-                    min_number=lottery.ticket_min_number,
-                    max_number=lottery.ticket_max_number,
-                    number_of_winning_tickets=lottery.number_of_winning_tickets,
+                lottery.winning_tickets = (
+                    select_winning_tickets(
+                        hash=block_hash,
+                        min_number=lottery.ticket_min_number,
+                        max_number=lottery.ticket_max_number,
+                        number_of_winning_tickets=lottery.number_of_winning_tickets,
+                    )
+                    if not lottery.is_guaranteed
+                    else select_winning_tickets_guaranteed(
+                        hash=block_hash,
+                        ticket_numbers=[_.ticket_number for _ in lottery.tickets],
+                        number_of_winning_tickets=lottery.number_of_winning_tickets,
+                    )
                 )
                 lottery.status = LotteryStatus.STRIKED
                 await lottery.save(update_fields=["winning_tickets", "status", "modified_at"])
@@ -308,7 +304,7 @@ class LotteryCog(commands.Cog):
             widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
             widget.add_field(
                 name="Winning tickets:",
-                value=f"`{', '.join(map(str, lottery.winning_tickets))}`",
+                value=f"`{', '.join(map(str, lottery.winning_tickets))}`" if lottery.winning_tickets else "`42`",
                 inline=False,
             )
             if winners_ids:
