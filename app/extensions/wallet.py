@@ -10,6 +10,7 @@ from discord_slash import cog_ext, SlashContext
 import config
 from app.models import User
 from app.utils import ensure_registered, pp_points
+from app.constants import DELETE_AFTER
 
 
 class WalletCog(commands.Cog):
@@ -47,7 +48,8 @@ class WalletCog(commands.Cog):
             points = Decimal(str_points)
             await User.filter(id=message.author.id).update(balance=F("balance") + points)  # prevent race conditions
             await message.channel.send(
-                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>.\nTo participate, `/lottery buy [lottery name]`"  # noqa: E501
+                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>.\nTo participate, `/lottery buy [lottery name]`",  # noqa: E501
+                delete_after=DELETE_AFTER,
             )
 
     @cog_ext.cog_subcommand(
@@ -58,7 +60,10 @@ class WalletCog(commands.Cog):
     )
     async def my_wallet(self, ctx: SlashContext):
         user = await ensure_registered(ctx.author.id)
-        await ctx.send(f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}<:points:819648258112225316>")
+        await ctx.send(
+            f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}<:points:819648258112225316>",
+            delete_after=DELETE_AFTER,
+        )
 
     @cog_ext.cog_subcommand(
         base="lottery",
@@ -74,10 +79,11 @@ class WalletCog(commands.Cog):
             if old_balance >= 1:
                 user.balance = 0
                 await user.save(update_fields=["balance", "modified_at"])
-                await ctx.send(f"!send <@!{ctx.author.id}> {int(old_balance)}")
+                await ctx.send(f"!send <@!{ctx.author.id}> {int(old_balance)}", delete_after=DELETE_AFTER)
             else:
                 await ctx.send(
-                    f"{ctx.author.mention} minimum withdrawal amount is 1<:points:819648258112225316> (you have {pp_points(user.balance)}<:points:819648258112225316>)"  # noqa: E501
+                    f"{ctx.author.mention} minimum withdrawal amount is 1<:points:819648258112225316> (you have {pp_points(user.balance)}<:points:819648258112225316>)",  # noqa: E501
+                    delete_after=DELETE_AFTER,
                 )
 
     @cog_ext.cog_subcommand(
@@ -89,7 +95,8 @@ class WalletCog(commands.Cog):
     async def deposit(self, ctx: SlashContext):
         await ensure_registered(ctx.author.id)
         await ctx.send(
-            f"{ctx.author.mention}, to deposit <:points:819648258112225316> to your lottery wallet send command\n `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`"  # noqa: E501
+            f"{ctx.author.mention}, to deposit <:points:819648258112225316> to your lottery wallet send command\n `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`",  # noqa: E501
+            delete_after=DELETE_AFTER,
         )
 
 

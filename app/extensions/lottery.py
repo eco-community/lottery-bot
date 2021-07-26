@@ -28,7 +28,7 @@ from app.utils import (
     register_view_lottery_command,
     reload_options_hack,
 )
-from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS, GREEN, GOLD
+from app.constants import LotteryStatus, STOP_SALES_BEFORE_START_IN_SEC, BLOCK_CONFIRMATIONS, GREEN, GOLD, DELETE_AFTER
 
 
 class LotteryCog(commands.Cog):
@@ -65,6 +65,12 @@ class LotteryCog(commands.Cog):
                 required=False,
             ),
             create_option(
+                name="is_whitelisted",
+                description="if True only admins will be able to buy tickets on someone's behalf",
+                option_type=SlashCommandOptionType.BOOLEAN,
+                required=False,
+            ),
+            create_option(
                 name="number_of_winning_tickets",
                 description="Number of winning tickets (default 1)",
                 option_type=SlashCommandOptionType.INTEGER,
@@ -78,35 +84,43 @@ class LotteryCog(commands.Cog):
         name: str,
         eth_block: int,
         price: int = None,
+        is_whitelisted: bool = None,
         number_of_winning_tickets: int = None,
     ):
         can_control_bot = find(lambda _: _.name in ROLES_CAN_CONTROL_BOT, ctx.author.roles)
         if not can_control_bot:
-            return await ctx.send(f"{ctx.author.mention}, I’m sorry but I can’t do that for you.")
+            return await ctx.send(
+                f"{ctx.author.mention}, I’m sorry but I can’t do that for you.", delete_after=DELETE_AFTER
+            )
         # parse args
         lottery = Lottery(name=name, strike_eth_block=eth_block, is_guaranteed=True)
         if price is not None:
             lottery.ticket_price = price
         if number_of_winning_tickets is not None:
             lottery.number_of_winning_tickets = number_of_winning_tickets
+        if is_whitelisted is not None:
+            lottery.is_whitelisted = is_whitelisted
         if lottery.number_of_winning_tickets < 1:
             return await ctx.send(
-                f"{ctx.author.mention}, error, `number_of_winning_tickets` should be greater or equal than 1"
-            )  # noqa: E501
+                f"{ctx.author.mention}, error, `number_of_winning_tickets` should be greater or equal than 1",
+                delete_after=DELETE_AFTER,
+            )
         # get eta to block
         try:
             lottery.strike_date_eta = await get_eta_to_block(eth_block)
         except BlockAlreadyMinedException:
             # block has already passed
             return await ctx.send(
-                f"{ctx.author.mention}, error, block `{eth_block}` already passed, choose a different block"
+                f"{ctx.author.mention}, error, block `{eth_block}` already passed, choose a different block",
+                delete_after=DELETE_AFTER,
             )
         # save lottery
         try:
             await lottery.save()
         except exceptions.IntegrityError:
             return await ctx.send(
-                f"{ctx.author.mention}, error, lottery `{name}` already exists, choose a different name"
+                f"{ctx.author.mention}, error, lottery `{name}` already exists, choose a different name",
+                delete_after=DELETE_AFTER,
             )
         await ctx.send(
             f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"  # noqa: E501
@@ -121,7 +135,9 @@ class LotteryCog(commands.Cog):
             .get_or_none(name=name)
         )
         if not lottery:
-            return await ctx.send(f"{ctx.author.mention}, error, lottery `{name}` doesn't exist")
+            return await ctx.send(
+                f"{ctx.author.mention}, error, lottery `{name}` doesn't exist", delete_after=DELETE_AFTER
+            )
         widget = Embed(
             description=":game_die:Lottery information:game_die:",
             color=GREEN,
@@ -174,7 +190,7 @@ class LotteryCog(commands.Cog):
             value=f"[{lottery.strike_eth_block}](<https://etherscan.io/block/{lottery.strike_eth_block}>)",
             inline=False,
         )  # noqa: E501
-        await ctx.send(content=ctx.author.mention, embed=widget)
+        await ctx.send(content=ctx.author.mention, embed=widget, delete_after=DELETE_AFTER)
 
     @cog_ext.cog_subcommand(
         base="lottery",
@@ -190,7 +206,7 @@ class LotteryCog(commands.Cog):
             .limit(10)
         )
         if not lotteries_ended:
-            return await ctx.send(f"{ctx.author.mention}, we don't have any past lotteries")
+            return await ctx.send(f"{ctx.author.mention}, we don't have any past lotteries", delete_after=DELETE_AFTER)
         widget = Embed(description="Results for last 10 lotteries", color=GREEN, title="History of lotteries")
         widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
         for lottery in lotteries_ended:
@@ -201,7 +217,7 @@ class LotteryCog(commands.Cog):
                 widget.add_field(name=lottery.name, value=f"Winners: {winners_mentions_str}", inline=False)
             else:
                 widget.add_field(name=lottery.name, value="Winners: `no winners`", inline=False)
-        await ctx.send(content=ctx.author.mention, embed=widget)
+        await ctx.send(content=ctx.author.mention, embed=widget, delete_after=DELETE_AFTER)
 
     async def _handle_stopping_sales(self) -> None:
         """Handle stopping sales for started lotteries if strike date is close enough"""
@@ -281,7 +297,6 @@ class LotteryCog(commands.Cog):
                 lottery_pool = lottery.total_tickets * lottery.ticket_price
                 # get old winning pool
                 old_winning_pool = await get_old_winning_pool()
-                # import ipdb;ipdb.set_trace()
                 total_winning_pool = old_winning_pool + lottery_pool
                 winning_ticket_share = total_winning_pool / len(winning_tickets)
                 # share winning pool between winners

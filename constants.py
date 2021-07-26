@@ -12,7 +12,7 @@ pg_db = os.getenv("POSTGRES_DB")
 
 
 SENTRY_ENV_NAME = "eco_lottery_bot"
-ROLES_CAN_CONTROL_BOT = ["Eco Team", "Infrastructure Engineer"]
+ROLES_CAN_CONTROL_BOT = ["Eco Team", "Infrastructure Engineer", "Prefect"]
 GUILD_INDEX = 0
 
 

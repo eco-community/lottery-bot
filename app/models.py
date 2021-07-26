@@ -41,6 +41,8 @@ class Lottery(Model):
     )
     # if True winner will be 100% if False lottery points will be added to the total winning pool for the next lottery
     is_guaranteed = fields.BooleanField(default=False)
+    # if True only people who has ROLES_CAN_CONTROL_BOT could buy tickets
+    is_whitelisted = fields.BooleanField(default=False)
     ticket_min_number = fields.IntField(default=10_000)
     ticket_max_number = fields.IntField(default=99_000)
     participants = fields.ManyToManyField("app.User", related_name="lotteries", through="ticket")

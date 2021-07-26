@@ -10,6 +10,7 @@ class LotteryStatus(str, Enum):
 
 STOP_SALES_BEFORE_START_IN_SEC = 60 * 60 * 2  # in seconds
 BLOCK_CONFIRMATIONS = 12  # number of block confirmations after which block will be considered as canonical
+DELETE_AFTER = 60 * 10  # the number of seconds to wait in the background before deleting the message
 
 GREEN = 0x03D692
-GOLD = 0xf1c40f
+GOLD = 0xF1C40F
