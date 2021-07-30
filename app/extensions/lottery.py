@@ -65,6 +65,18 @@ class LotteryCog(commands.Cog):
                 required=False,
             ),
             create_option(
+                name="min_num",
+                description="Ticket min number (default 10000)",
+                option_type=SlashCommandOptionType.INTEGER,
+                required=False,
+            ),
+            create_option(
+                name="max_num",
+                description="Ticket max number (default 99000)",
+                option_type=SlashCommandOptionType.INTEGER,
+                required=False,
+            ),
+            create_option(
                 name="is_whitelisted",
                 description="if True only admins will be able to buy tickets on someone's behalf",
                 option_type=SlashCommandOptionType.BOOLEAN,
@@ -84,6 +96,8 @@ class LotteryCog(commands.Cog):
         name: str,
         eth_block: int,
         price: int = None,
+        min_num: int = None,
+        max_num: int = None,
         is_whitelisted: bool = None,
         number_of_winning_tickets: int = None,
     ):
@@ -96,6 +110,10 @@ class LotteryCog(commands.Cog):
         lottery = Lottery(name=name, strike_eth_block=eth_block, is_guaranteed=True)
         if price is not None:
             lottery.ticket_price = price
+        if min_num is not None:
+            lottery.ticket_min_number = min_num
+        if max_num is not None:
+            lottery.ticket_max_number = max_num
         if number_of_winning_tickets is not None:
             lottery.number_of_winning_tickets = number_of_winning_tickets
         if is_whitelisted is not None:
