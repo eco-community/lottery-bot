@@ -16,8 +16,8 @@ if __name__ == "__main__":
     # initialize bot params
     intents = Intents.default()
     intents.members = True
-    activity = Activity(type=ActivityType.playing, name="ECO lottery")
-    bot = commands.Bot(command_prefix="!lottery.", help_command=None, intents=intents, activity=activity)
+    activity = Activity(type=ActivityType.playing, name="ECO sweepstake")
+    bot = commands.Bot(command_prefix="!sweepstake.", help_command=None, intents=intents, activity=activity)
     SlashCommand(bot, sync_commands=True, sync_on_cog_reload=True, override_type=True)
 
     # init sentry SDK

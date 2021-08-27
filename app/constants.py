@@ -2,10 +2,10 @@ from enum import Enum
 
 
 class LotteryStatus(str, Enum):
-    STARTED = "started"  # lottery started
-    STOP_SALES = "stop_sales"  # when lottery is close to strike date stop selling tickets
+    STARTED = "started"  # sweepstake started
+    STOP_SALES = "stop_sales"  # when sweepstake is close to strike date stop selling tickets
     STRIKED = "striked"  # winning tickets were selected
-    ENDED = "ended"  # lottery ended, winners were paid
+    ENDED = "ended"  # sweepstake ended, winners were paid
 
 
 STOP_SALES_BEFORE_START_IN_SEC = 60 * 60 * 2  # in seconds

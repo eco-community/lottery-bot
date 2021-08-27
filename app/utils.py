@@ -115,19 +115,19 @@ async def register_view_lottery_command(bot, cmd) -> None:
     lotteries = await Lottery.all().order_by("-created_at").limit(10)
     try:
         # force sync_commands to detect new changes and sync slash commands with Discord
-        del bot.slash.subcommands["lottery"]["view"]
+        del bot.slash.subcommands["sweepstake"]["view"]
     except KeyError:
         pass
     bot.slash.add_subcommand(
         cmd=cmd,
-        base="lottery",
+        base="sweepstake",
         name="view",
-        description="Display lottery information",
+        description="Display sweepstake information",
         guild_ids=config.GUILD_IDS,
         options=[
             create_option(
                 name="name",
-                description="choose lottery",
+                description="choose sweepstake",
                 option_type=3,
                 required=True,
                 choices=[create_choice(name=_.name, value=_.name) for _ in lotteries],
@@ -142,19 +142,19 @@ async def register_buy_ticket_command(bot, cmd) -> None:
     lotteries = await Lottery.filter(status=LotteryStatus.STARTED).order_by("-created_at").limit(10)
     try:
         # force sync_commands to detect new changes and sync slash commands with Discord
-        del bot.slash.subcommands["lottery"]["buy"]
+        del bot.slash.subcommands["sweepstake"]["buy"]
     except KeyError:
         pass
     bot.slash.add_subcommand(
         cmd=cmd,
-        base="lottery",
+        base="sweepstake",
         name="buy",
         description="Buy ticket",
         guild_ids=config.GUILD_IDS,
         options=[
             create_option(
                 name="name",
-                description="choose lottery",
+                description="choose sweepstake",
                 option_type=3,
                 required=True,
                 choices=[create_choice(name=_.name, value=_.name) for _ in lotteries],
@@ -169,19 +169,19 @@ async def register_my_tickets_command(bot, cmd) -> None:
     lotteries = await Lottery.all().order_by("-created_at").limit(10)
     try:
         # force sync_commands to detect new changes and sync slash commands with Discord
-        del bot.slash.subcommands["lottery"]["tickets"]
+        del bot.slash.subcommands["sweepstake"]["tickets"]
     except KeyError:
         pass
     bot.slash.add_subcommand(
         cmd=cmd,
-        base="lottery",
+        base="sweepstake",
         name="tickets",
         description="My tickets",
         guild_ids=config.GUILD_IDS,
         options=[
             create_option(
                 name="name",
-                description="choose lottery",
+                description="choose sweepstake",
                 option_type=3,
                 required=True,
                 choices=[create_choice(name=_.name, value=_.name) for _ in lotteries],

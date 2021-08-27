@@ -1,52 +1,49 @@
-## Welcome to the LotteryBot tutorial
+## Welcome to the SweepstakeBot tutorial
 
-### How to get help
+### How to create a sweepstake
 
-`/lottery help`
+To create sweepstake we will use `/new_sweepstake` command  
 
-### How to create a lottery
+For example to create `Test Sweepstake` which will strike at `12156191` ethereum block with the ticket price of `10` eco points with tickets ranging from `0` to `10000` we will use  
+`/new_sweepstake Test Sweepstake 12156191 10 0 10000`
 
-To create lottery we will use `/new_lottery` command  
-
-For example to create `Test Lottery` which will strike at `12156191` ethereum block with the ticket price of `10` eco points with tickets ranging from `0` to `10000` we will use  
-`/new_lottery Test Lottery 12156191 10 0 10000`
-
-Setting ticket range allows us to control the probability of winning the lottery.
-If nobody won the lottery, lottery winning pool will be kept for the next lotteries
+Setting ticket range allows us to control the probability of winning the sweepstake.
+If nobody won the sweepstake, sweepstake winning pool will be kept for the next lotteries
 
 
-### How to view details about the lottery
+### How to view details about the sweepstake
 
-Using this command we can check all info about lottery  
-`/lottery view Test Lottery`
+Using this command we can check all info about sweepstake  
+`/sweepstake view Test Sweepstake`
 
 
-### How to replenish lottery wallet
-To transfer 10 eco points to the lottery wallet we will use this command  
-`!send @LotteryBot 10`  
-So when we check our wallet via `/lottery wallet` we will see that we have 10 eco points available for buying tickets.
+### How to replenish sweepstake wallet
+To transfer 10 eco points to the sweepstake wallet we will use this command  
+`!send @SweepstakeBot 10`  
+So when we check our wallet via `/sweepstake wallet` we will see that we have 10 eco points available for buying tickets.
 
 
 ### How to buy a ticket
-To buy one ticket for the `Test Lottery` we will use this command  
-`/lottery buy Test Lottery`  
-The ticket price will be deducted from our lottery wallet, so when we check via `/lottery wallet` we should see that our balance is `0`.
+To buy one ticket for the `Test Sweepstake` we will use this command  
+`/sweepstake buy Test Sweepstake`  
+The ticket price will be deducted from our sweepstake wallet, so when we check via `/sweepstake wallet` we should see that our balance is `0`.
 
 
 
 ### When we can't buy tickets
 
-- when a lottery is close to the strike date (by default 5 hours) we can't buy tickets
-- when a lottery has ended
+- when a sweepstake is close to the strike date (by default 5 hours) we can't buy tickets
+- when a sweepstake has ended
 - when all tickets were sold
+- when sweepstake is of a whitelisted type
 
 
 ### How to view tickets
-To view tickets for the `Test Lottery,` we can use this command  
-`/lottery tickets Test Lottery`
+To view tickets for the `Test Sweepstake,` we can use this command  
+`/sweepstake tickets Test Sweepstake`
 
 
 ### How to withdraw eco points
 To withdraw eco points please use bellow command  
-`/lottery withdraw`  
-This will send all points from your lottery balance to your account.
+`/sweepstake withdraw`  
+This will send all points from your sweepstake balance to your account.

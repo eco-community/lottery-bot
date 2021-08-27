@@ -34,7 +34,7 @@ class TicketCog(commands.Cog):
             lottery = await Lottery.get_or_none(name=name)
             if not lottery:
                 return await ctx.send(
-                    f"{ctx.author.mention}, error, lottery `{name}` doesn't exist",
+                    f"{ctx.author.mention}, error, sweepstake `{name}` doesn't exist",
                     delete_after=DELETE_AFTER,
                 )
             # validate that we allow selling tickets
@@ -61,14 +61,14 @@ class TicketCog(commands.Cog):
             # validate user balance
             if user.balance < lottery.ticket_price:
                 return await ctx.send(
-                    f"{ctx.author.mention}, not enough points, you only have `{pp_points(user.balance)}`<:points:819648258112225316> in your lottery wallet and ticket price is `{int(lottery.ticket_price)}`<:points:819648258112225316>. To add points to your lottery wallet, `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`",  # noqa: E501
+                    f"{ctx.author.mention}, not enough points, you only have `{pp_points(user.balance)}`<:points:819648258112225316> in your sweepstake wallet and ticket price is `{int(lottery.ticket_price)}`<:points:819648258112225316>. To add points to your sweepstake wallet, `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`",  # noqa: E501
                     delete_after=DELETE_AFTER,
                 )
             # handle whitelisted lotteries
             if lottery.is_whitelisted and can_control_bot:
                 try:
                     await ctx.send(
-                        f"Hello, {ctx.author.mention}, this lottery is of whitelisted type, please mention user for whom you want to buy ticket",  # noqa: E501
+                        f"Hello, {ctx.author.mention}, this sweepstake is of whitelisted type, please mention user for whom you want to buy a ticket",  # noqa: E501
                         delete_after=DELETE_AFTER,
                     )
                     message = await self.bot.wait_for(
@@ -84,7 +84,7 @@ class TicketCog(commands.Cog):
                     await ensure_registered(owner_id)
                     owner = await User.get(id=owner_id)
                 except asyncio.TimeoutError:
-                    pass
+                    return
             else:
                 owner = user
             # to generate random ticket number that doesn't have collisions we will need to grab all ticket numbers
@@ -122,7 +122,7 @@ class TicketCog(commands.Cog):
         lottery = await Lottery.get_or_none(name=name)
         if not lottery:
             return await ctx.send(
-                f"{ctx.author.mention}, error, lottery `{name}` doesn't exist",
+                f"{ctx.author.mention}, error, sweepstake `{name}` doesn't exist",
                 delete_after=DELETE_AFTER,
             )
         tickets = await Ticket.filter(Q(lottery__id=lottery.id) & Q(user__id=ctx.author.id))

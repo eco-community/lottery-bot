@@ -42,19 +42,19 @@ class LotteryCog(commands.Cog):
         self.lottery_status_cron_job.cancel()
 
     @cog_ext.cog_slash(
-        name="new_lottery",
+        name="new_sweepstake",
         guild_ids=config.GUILD_IDS,
-        description="Create a new lottery",
+        description="Create a new sweepstake",
         options=[
             create_option(
                 name="name",
-                description="Lottery name",
+                description="Sweepstake name",
                 option_type=SlashCommandOptionType.STRING,
                 required=True,
             ),
             create_option(
                 name="eth_block",
-                description="Lottery strike block",
+                description="Sweepstake strike block",
                 option_type=SlashCommandOptionType.INTEGER,
                 required=True,
             ),
@@ -137,11 +137,11 @@ class LotteryCog(commands.Cog):
             await lottery.save()
         except exceptions.IntegrityError:
             return await ctx.send(
-                f"{ctx.author.mention}, error, lottery `{name}` already exists, choose a different name",
+                f"{ctx.author.mention}, error, sweepstake `{name}` already exists, choose a different name",
                 delete_after=DELETE_AFTER,
             )
         await ctx.send(
-            f"{ctx.author.mention}, success! Created lottery `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"  # noqa: E501
+            f"{ctx.author.mention}, success! Created sweepstake `{lottery}`, will strike at {lottery.strike_date_eta:%Y-%m-%d %H:%M} UTC"  # noqa: E501
         )
         await reload_options_hack(ctx.bot)
 
@@ -154,10 +154,10 @@ class LotteryCog(commands.Cog):
         )
         if not lottery:
             return await ctx.send(
-                f"{ctx.author.mention}, error, lottery `{name}` doesn't exist", delete_after=DELETE_AFTER
+                f"{ctx.author.mention}, error, sweepstake `{name}` doesn't exist", delete_after=DELETE_AFTER
             )
         widget = Embed(
-            description=":game_die:Lottery information:game_die:",
+            description=":game_die:Sweepstake information:game_die:",
             color=GREEN,
             title=f"{lottery.name}",
         )
@@ -211,7 +211,7 @@ class LotteryCog(commands.Cog):
         await ctx.send(content=ctx.author.mention, embed=widget, delete_after=DELETE_AFTER)
 
     @cog_ext.cog_subcommand(
-        base="lottery",
+        base="sweepstake",
         name="history",
         guild_ids=config.GUILD_IDS,
         description="Display results for previous lotteries",
@@ -349,7 +349,7 @@ class LotteryCog(commands.Cog):
             else:
                 widget.add_field(
                     name="Winners:",
-                    value="Nobody won the lottery, winning pool will be added to the next lottery",
+                    value="Nobody won the sweepstake, winning pool will be added to the next sweepstake",
                     inline=False,
                 )
                 # send notification to the channel
