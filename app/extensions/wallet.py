@@ -21,7 +21,7 @@ class WalletCog(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """Refill user's balance via listening for reactions to messages from The Accountant bot"""
 
-        if payload.user_id != config.ACCOUNTANT_BOT_ID:
+        if payload.user_id not in config.ACCOUNTANT_BOT_IDS:
             # we need to only refill balance if it was The Accountant bot who reacted to message
             return
 
