@@ -65,7 +65,8 @@ class TicketCog(commands.Cog):
                     delete_after=DELETE_AFTER,
                 )
             # handle whitelisted lotteries
-            if lottery.is_whitelisted and can_control_bot:
+            is_whitelisted_ticket = lottery.is_whitelisted and can_control_bot
+            if is_whitelisted_ticket:
                 try:
                     await ctx.send(
                         f"Hello, {ctx.author.mention}, this sweepstake is of whitelisted type, please mention user for whom you want to buy a ticket",  # noqa: E501
@@ -106,9 +107,14 @@ class TicketCog(commands.Cog):
                 )
                 user.balance = user.balance - lottery.ticket_price
                 await user.save(update_fields=["balance", "modified_at"])
-                await ctx.send(
-                    f"{ctx.author.mention}, you bought {lottery.name} ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
-                )
+                if is_whitelisted_ticket:
+                    await ctx.send(
+                        f":tickets: Congratulations <@!{owner.id}>, you just had {lottery.name} purchased for you by {ctx.author.mention}.  Your ticket number is: {ticket.ticket_number}:tickets:"  # noqa: E501
+                    )
+                else:
+                    await ctx.send(
+                        f"{ctx.author.mention}, you bought {lottery.name} ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
+                    )
             except IndexError:
                 # it means that all tickets were sold, stop ticket sales for lottery
                 lottery.status = LotteryStatus.STOP_SALES
