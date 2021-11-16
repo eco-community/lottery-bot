@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 
+from config import PROJECT_NAME
 
 # load env variables
 load_dotenv()
@@ -11,8 +12,7 @@ pg_password = os.getenv("POSTGRES_PASSWORD")
 pg_db = os.getenv("POSTGRES_DB")
 
 
-SENTRY_ENV_NAME = "eco_lottery_bot"
-ROLES_CAN_CONTROL_BOT = ["Eco Team", "Infrastructure Engineer", "Prefect"]
+SENTRY_ENV_NAME = f"{PROJECT_NAME}_lottery_bot".casefold()
 GUILD_INDEX = 0
 
 

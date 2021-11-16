@@ -9,3 +9,7 @@ LOG_LEVEL = "INFO"
 # should the bot log to file or to stdout
 LOG_TO_FILE = True
 GUILD_IDS = [424242424242]  # to use slash commands we need specify guild ids
+ROLES_CAN_CONTROL_BOT = ["Eco Team", "Infrastructure Engineer", "Prefect"]
+PROJECT_NAME = "ECO"
+PROJECT_THUMBNAIL = "https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png"
+POINTS_EMOJI = "<:points:819648258112225316>"

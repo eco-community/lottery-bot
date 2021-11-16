@@ -4,7 +4,7 @@
 
 To create sweepstake we will use `/new_sweepstake` command  
 
-For example to create `Test Sweepstake` which will strike at `12156191` ethereum block with the ticket price of `10` eco points with tickets ranging from `0` to `10000` we will use  
+For example to create `Test Sweepstake` which will strike at `12156191` ethereum block with the ticket price of `10` points with tickets ranging from `0` to `10000` we will use  
 `/new_sweepstake Test Sweepstake 12156191 10 0 10000`
 
 Setting ticket range allows us to control the probability of winning the sweepstake.
@@ -18,9 +18,9 @@ Using this command we can check all info about sweepstake
 
 
 ### How to replenish sweepstake wallet
-To transfer 10 eco points to the sweepstake wallet we will use this command  
+To transfer 10 points to the sweepstake wallet we will use this command  
 `!send @SweepstakeBot 10`  
-So when we check our wallet via `/sweepstake wallet` we will see that we have 10 eco points available for buying tickets.
+So when we check our wallet via `/sweepstake wallet` we will see that we have 10 points available for buying tickets.
 
 
 ### How to buy a ticket
@@ -43,7 +43,7 @@ To view tickets for the `Test Sweepstake,` we can use this command
 `/sweepstake tickets Test Sweepstake`
 
 
-### How to withdraw eco points
-To withdraw eco points please use bellow command  
+### How to withdraw points
+To withdraw points please use bellow command  
 `/sweepstake withdraw`  
 This will send all points from your sweepstake balance to your account.

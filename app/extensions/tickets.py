@@ -8,7 +8,7 @@ from tortoise.query_utils import Q
 from tortoise.transactions import in_transaction
 from discord_slash import SlashContext
 
-from constants import ROLES_CAN_CONTROL_BOT
+from config import ROLES_CAN_CONTROL_BOT, POINTS_EMOJI, PROJECT_THUMBNAIL
 from app.models import Lottery, Ticket, User
 from app.utils import ensure_registered, pp_points, register_buy_ticket_command, register_my_tickets_command
 from app.constants import LotteryStatus, GREEN, DELETE_AFTER
@@ -61,7 +61,7 @@ class TicketCog(commands.Cog):
             # validate user balance
             if user.balance < lottery.ticket_price:
                 return await ctx.send(
-                    f"{ctx.author.mention}, not enough points, you only have `{pp_points(user.balance)}`<:points:819648258112225316> in your sweepstake wallet and ticket price is `{int(lottery.ticket_price)}`<:points:819648258112225316>. To add points to your sweepstake wallet, `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`",  # noqa: E501
+                    f"{ctx.author.mention}, not enough points, you only have `{pp_points(user.balance)}`{POINTS_EMOJI} in your sweepstake wallet and ticket price is `{int(lottery.ticket_price)}`{POINTS_EMOJI}. To add points to your sweepstake wallet, `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`",  # noqa: E501
                     delete_after=DELETE_AFTER,
                 )
             # handle whitelisted lotteries
@@ -113,7 +113,7 @@ class TicketCog(commands.Cog):
                     )
                 else:
                     await ctx.send(
-                        f"{ctx.author.mention}, you bought {lottery.name} ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`<:points:819648258112225316>"  # noqa: E501
+                        f"{ctx.author.mention}, you bought {lottery.name} ticket with number: `{ticket.ticket_number}`, your balance is: `{pp_points(user.balance)}`{POINTS_EMOJI}"  # noqa: E501
                     )
             except IndexError:
                 # it means that all tickets were sold, stop ticket sales for lottery
@@ -137,7 +137,7 @@ class TicketCog(commands.Cog):
             color=GREEN,
             title=f"{name} tickets",
         )
-        widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+        widget.set_thumbnail(url=PROJECT_THUMBNAIL)
         if len(tickets):
             widget.add_field(
                 name="Ticket numbers:",

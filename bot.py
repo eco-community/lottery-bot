@@ -16,7 +16,7 @@ if __name__ == "__main__":
     # initialize bot params
     intents = Intents.default()
     intents.members = True
-    activity = Activity(type=ActivityType.playing, name="ECO sweepstake")
+    activity = Activity(type=ActivityType.playing, name=f"{config.PROJECT_NAME} sweepstake")
     bot = commands.Bot(command_prefix="!sweepstake.", help_command=None, intents=intents, activity=activity)
     SlashCommand(bot, sync_commands=True, sync_on_cog_reload=True, override_type=True)
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     )
 
     # setup logger
-    file_handler = logging.FileHandler(filename="eco-lottery.log")
+    file_handler = logging.FileHandler(filename="sweepstake.log")
     stdout_handler = logging.StreamHandler(sys.stdout)
 
     logging.basicConfig(

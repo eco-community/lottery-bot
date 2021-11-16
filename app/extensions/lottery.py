@@ -15,7 +15,6 @@ from discord_slash.utils.manage_commands import create_option
 from discord_slash.model import SlashCommandOptionType
 
 import config
-from constants import ROLES_CAN_CONTROL_BOT
 from app.models import Lottery, User
 from app.exceptions import BlockAlreadyMinedException
 from app.utils import (
@@ -101,7 +100,7 @@ class LotteryCog(commands.Cog):
         is_whitelisted: bool = None,
         number_of_winning_tickets: int = None,
     ):
-        can_control_bot = find(lambda _: _.name in ROLES_CAN_CONTROL_BOT, ctx.author.roles)
+        can_control_bot = find(lambda _: _.name in config.ROLES_CAN_CONTROL_BOT, ctx.author.roles)
         if not can_control_bot:
             return await ctx.send(
                 f"{ctx.author.mention}, I’m sorry but I can’t do that for you.", delete_after=DELETE_AFTER
@@ -161,10 +160,10 @@ class LotteryCog(commands.Cog):
             color=GREEN,
             title=f"{lottery.name}",
         )
-        widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+        widget.set_thumbnail(url=config.PROJECT_THUMBNAIL)
         widget.add_field(
             name="Ticket price:",
-            value=f"{pp_points(lottery.ticket_price)}<:points:819648258112225316>",
+            value=f"{pp_points(lottery.ticket_price)}{config.POINTS_EMOJI}",
             inline=False,
         )
         widget.add_field(
@@ -183,7 +182,7 @@ class LotteryCog(commands.Cog):
             total_winning_pool = old_winning_pool + lottery_pool
             widget.add_field(
                 name="Expected reward to win:",
-                value=f"{pp_points(total_winning_pool)}<:points:819648258112225316>",
+                value=f"{pp_points(total_winning_pool)}{config.POINTS_EMOJI}",
                 inline=False,
             )
         widget.add_field(name="Status:", value=f"{lottery.status}", inline=False)
@@ -226,7 +225,7 @@ class LotteryCog(commands.Cog):
         if not lotteries_ended:
             return await ctx.send(f"{ctx.author.mention}, we don't have any past lotteries", delete_after=DELETE_AFTER)
         widget = Embed(description="Results for last 10 lotteries", color=GREEN, title="History of lotteries")
-        widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+        widget.set_thumbnail(url=config.PROJECT_THUMBNAIL)
         for lottery in lotteries_ended:
             if lottery.has_winners:
                 winners_ids = {_.user_id for _ in lottery.tickets if _.ticket_number in lottery.winning_tickets}
@@ -334,10 +333,10 @@ class LotteryCog(commands.Cog):
                 color=GOLD,
                 title=lottery.name,
             )
-            widget.set_thumbnail(url="https://eco-bots.s3.eu-north-1.amazonaws.com/eco_large.png")
+            widget.set_thumbnail(url=config.PROJECT_THUMBNAIL)
             widget.add_field(
                 name="Winning tickets:",
-                value=f"`{', '.join(map(str, lottery.winning_tickets))}`" if lottery.winning_tickets else "`42`",
+                value=f"`{', '.join(map(str, lottery.winning_tickets))}`" if lottery.winning_tickets else "`-`",
                 inline=False,
             )
             if winners_ids:

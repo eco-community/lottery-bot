@@ -48,7 +48,7 @@ class WalletCog(commands.Cog):
             points = Decimal(str_points)
             await User.filter(id=message.author.id).update(balance=F("balance") + points)  # prevent race conditions
             await message.channel.send(
-                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}<:points:819648258112225316>.\nTo participate, `/sweepstake buy [sweepstake name]`",  # noqa: E501
+                f"<@{message.author.id}>, your balance was credited for {pp_points(points)}{config.POINTS_EMOJI}.\nTo participate, `/sweepstake buy [sweepstake name]`",  # noqa: E501
                 delete_after=DELETE_AFTER,
             )
 
@@ -61,7 +61,7 @@ class WalletCog(commands.Cog):
     async def my_wallet(self, ctx: SlashContext):
         user = await ensure_registered(ctx.author.id)
         await ctx.send(
-            f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}<:points:819648258112225316>",
+            f"{ctx.author.mention}, your balance is: {pp_points(user.balance)}{config.POINTS_EMOJI}",
             delete_after=DELETE_AFTER,
         )
 
@@ -69,7 +69,7 @@ class WalletCog(commands.Cog):
         base="sweepstake",
         name="withdraw",
         guild_ids=config.GUILD_IDS,
-        description="Withdraw eco points from my sweepstake wallet",
+        description="Withdraw points from my sweepstake wallet",
     )
     async def withdraw(self, ctx: SlashContext):
         await ensure_registered(ctx.author.id)
@@ -82,7 +82,7 @@ class WalletCog(commands.Cog):
                 await ctx.send(f"!send <@!{ctx.author.id}> {int(old_balance)}", delete_after=DELETE_AFTER)
             else:
                 await ctx.send(
-                    f"{ctx.author.mention} minimum withdrawal amount is 1<:points:819648258112225316> (you have {pp_points(user.balance)}<:points:819648258112225316>)",  # noqa: E501
+                    f"{ctx.author.mention} minimum withdrawal amount is 1{config.POINTS_EMOJI} (you have {pp_points(user.balance)}{config.POINTS_EMOJI})",  # noqa: E501
                     delete_after=DELETE_AFTER,
                 )
 
@@ -90,12 +90,12 @@ class WalletCog(commands.Cog):
         base="sweepstake",
         name="deposit",
         guild_ids=config.GUILD_IDS,
-        description="Deposit eco points to my sweepstake wallet",
+        description="Deposit points to my sweepstake wallet",
     )
     async def deposit(self, ctx: SlashContext):
         await ensure_registered(ctx.author.id)
         await ctx.send(
-            f"{ctx.author.mention}, to deposit <:points:819648258112225316> to your sweepstake wallet send command\n `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`",  # noqa: E501
+            f"{ctx.author.mention}, to deposit {config.POINTS_EMOJI} to your sweepstake wallet send command\n `!send @{ctx.bot.user.display_name}#{ctx.bot.user.discriminator} [number of points]`",  # noqa: E501
             delete_after=DELETE_AFTER,
         )
 
