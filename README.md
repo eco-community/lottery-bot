@@ -1,6 +1,8 @@
 # SweepstakeBot
 
-A bot that can create sweepstakes with verifiable randomness
+A bot that can create sweepstakes with verifiable randomness, using Points issued by [The Accountant](https://github.com/eco/discord-accountant) bot.
+
+**For more on this bot and all the rest of the Eco Community bots, check out [this post](https://echo.mirror.xyz/GlFuqSbTZOLDl0LA7eDa0Yibhqq6IHNUC48nd3WJZQw).**
 
 
 ## How to use
