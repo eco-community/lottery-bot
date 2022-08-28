@@ -17,6 +17,12 @@ Using this command we can check all info about sweepstake
 `/sweepstake view Test Sweepstake`
 
 
+### How to buy multiple tickets (whitelisted lottery only, admin only)  
+
+Using this command we can buy multiple tickets for whitelisted lottery (admin only)  
+`/sweepstake_admin buy_whitelisted`
+
+
 ### How to replenish sweepstake wallet
 To transfer 10 points to the sweepstake wallet we will use this command  
 `!send @SweepstakeBot 10`  

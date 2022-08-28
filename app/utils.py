@@ -164,6 +164,33 @@ async def register_buy_ticket_command(bot, cmd) -> None:
     return None
 
 
+async def register_buy_whitelisted_command(bot, cmd) -> None:
+    """Dirty hack to register options on fly for buy_whitelisted command"""
+    lotteries = await Lottery.filter(status=LotteryStatus.STARTED).order_by("-created_at").limit(10)
+    try:
+        # force sync_commands to detect new changes and sync slash commands with Discord
+        del bot.slash.subcommands["sweepstake_admin"]["buy_whitelisted"]
+    except KeyError:
+        pass
+    bot.slash.add_subcommand(
+        cmd=cmd,
+        base="sweepstake_admin",
+        name="buy_whitelisted",
+        description="Batch Buy Whitelisted tickets (admins only)",
+        guild_ids=config.GUILD_IDS,
+        options=[
+            create_option(
+                name="name",
+                description="choose sweepstake",
+                option_type=3,
+                required=True,
+                choices=[create_choice(name=_.name, value=_.name) for _ in lotteries],
+            )
+        ],
+    )
+    return None
+
+
 async def register_my_tickets_command(bot, cmd) -> None:
     """Dirty hack to register options on fly for my_tickets command"""
     lotteries = await Lottery.all().order_by("-created_at").limit(10)
@@ -195,6 +222,7 @@ async def reload_options_hack(bot) -> None:
     """dirty hack to fake dynamic loading of choices in slash commands"""
     await register_view_lottery_command(bot, bot.cogs["LotteryCog"].view_lottery)
     await register_buy_ticket_command(bot, bot.cogs["TicketCog"].buy_ticket)
+    await register_buy_whitelisted_command(bot, bot.cogs["TicketCog"].buy_whitelisted)
     await register_my_tickets_command(bot, bot.cogs["TicketCog"].my_tickets)
     bot.reload_extension("app.extensions.lottery")
 
