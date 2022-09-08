@@ -134,7 +134,7 @@ class TicketCog(commands.Cog):
                     string_message += f" <@!{owner.id}>(`{free_ticket_numbers[i]}` :tickets:),"
                 string_message = string_message[:-1]
                 await ctx.send(
-                    f"Congratulations {ctx.author.mention}, you just purchased tickets for such users:{string_message}"  # noqa: E501
+                    f"Congratulations {ctx.author.mention}, you just purchased tickets for `{lottery.name}` for:{string_message}"  # noqa: E501
                 )
             except asyncio.TimeoutError:
                 return
