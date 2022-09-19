@@ -129,13 +129,20 @@ class TicketCog(commands.Cog):
                 if tickets_left == need_to_create_tickets:
                     lottery.status = LotteryStatus.STOP_SALES
                     await lottery.save(update_fields=["status", "modified_at"])
-                string_message = ""
-                for i, owner in enumerate(owners):
-                    string_message += f" <@!{owner.id}>(`{free_ticket_numbers[i]}` :tickets:),"
-                string_message = string_message[:-1]
-                await ctx.send(
-                    f"Congratulations {ctx.author.mention}, you just purchased tickets for `{lottery.name}` for:{string_message}"  # noqa: E501
-                )
+                # avoid hitting discord max length limit
+                # split success messages into 20 tickets each
+                for i in range(0, len(tickets_raw), 20):
+                    tickets_chunk = tickets_raw[i : i + 20]
+                    string_message = ""
+                    for ticket in tickets_chunk:
+                        string_message += (
+                            f" <@!{ticket.user.id}>(`{ticket.ticket_number}` :tickets:),"
+                        )
+                    string_message = string_message[:-1]
+                    await ctx.send(
+                        f"Congratulations {ctx.author.mention}, you just purchased tickets for `{lottery.name}` for:{string_message}"  # noqa: E501
+                    )
+                    await asyncio.sleep(0.5)
             except asyncio.TimeoutError:
                 return
 
