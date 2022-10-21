@@ -30,7 +30,7 @@ class WalletCog(commands.Cog):
 
         if (
             # if user tried to send points in message
-            "!send" in message.content
+            ("!send" in message.content or "!eco" in message.content)
             # and there were single mention in the message
             and len(message.raw_mentions) == 1
             # and lottery bot was mentioned
@@ -46,7 +46,9 @@ class WalletCog(commands.Cog):
             # points should be the first number
             str_points = list_of_numbers[0]
             points = Decimal(str_points)
-            await User.filter(id=message.author.id).update(balance=F("balance") + points)  # prevent race conditions
+            await User.filter(id=message.author.id).update(
+                balance=F("balance") + points
+            )  # prevent race conditions
             await message.channel.send(
                 f"<@{message.author.id}>, your balance was credited for {pp_points(points)}{config.POINTS_EMOJI}.\nTo participate, `/sweepstake buy [sweepstake name]`",  # noqa: E501
                 delete_after=DELETE_AFTER,
@@ -79,7 +81,9 @@ class WalletCog(commands.Cog):
             if old_balance >= 1:
                 user.balance = 0
                 await user.save(update_fields=["balance", "modified_at"])
-                await ctx.send(f"!send <@!{ctx.author.id}> {int(old_balance)}", delete_after=DELETE_AFTER)
+                await ctx.send(
+                    f"!send <@!{ctx.author.id}> {int(old_balance)}", delete_after=DELETE_AFTER
+                )
             else:
                 await ctx.send(
                     f"{ctx.author.mention} minimum withdrawal amount is 1{config.POINTS_EMOJI} (you have {pp_points(user.balance)}{config.POINTS_EMOJI})",  # noqa: E501
